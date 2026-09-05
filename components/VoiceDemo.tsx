@@ -51,6 +51,15 @@ export default function VoiceDemo() {
   const recognition = useRef<Recognition | null>(null);
   const log = useRef<HTMLDivElement>(null);
 
+  /* Real speech is fetched a sentence at a time and played in order, so the
+     first sentence starts while the rest of the reply is still generating.
+     If the server has no voice configured it answers 503 once and we drop to
+     the browser's own voice for the session. */
+  const audioQueue = useRef<Promise<void>>(Promise.resolve());
+  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const useBrowserVoice = useRef(false);
+  const stopped = useRef(false);
+
   useEffect(() => {
     const w = window as unknown as {
       SpeechRecognition?: new () => Recognition;
@@ -67,13 +76,14 @@ export default function VoiceDemo() {
     }
     speechOn.current = "speechSynthesis" in window;
     return () => {
-      if (speechOn.current) window.speechSynthesis.cancel();
+      stopped.current = true;
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
   }, []);
 
   const push = useCallback((item: Item) => setItems((prev) => [...prev, item]), []);
 
-  const speak = useCallback((text: string) => {
+  const browserSpeak = useCallback((text: string) => {
     if (!speechOn.current) return;
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.04;
@@ -81,11 +91,62 @@ export default function VoiceDemo() {
     window.speechSynthesis.speak(u);
   }, []);
 
+  const speak = useCallback(
+    (text: string) => {
+      if (useBrowserVoice.current) {
+        browserSpeak(text);
+        return;
+      }
+      // chain onto the queue so sentences play in the order they arrived,
+      // however out of order their audio comes back
+      audioQueue.current = audioQueue.current.then(async () => {
+        if (stopped.current) return;
+        try {
+          const res = await fetch("/api/speak", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          if (res.status === 503) {
+            useBrowserVoice.current = true;
+            browserSpeak(text);
+            return;
+          }
+          if (!res.ok) throw new Error(String(res.status));
+
+          const url = URL.createObjectURL(await res.blob());
+          const audio = new Audio(url);
+          audioEl.current = audio;
+          await new Promise<void>((resolve) => {
+            audio.onended = () => resolve();
+            audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
+          });
+          URL.revokeObjectURL(url);
+        } catch {
+          browserSpeak(text);
+        }
+      });
+    },
+    [browserSpeak]
+  );
+
+  const silence = useCallback(() => {
+    stopped.current = true;
+    audioQueue.current = Promise.resolve();
+    if (audioEl.current) {
+      audioEl.current.pause();
+      audioEl.current = null;
+    }
+    if (speechOn.current) window.speechSynthesis.cancel();
+  }, []);
+
   const send = useCallback(
     async (text: string) => {
       const clean = text.trim();
       if (!clean || busy || status === "ended") return;
 
+      stopped.current = false;
       setBusy(true);
       setDraft("");
       push({ kind: "said", who: "you", text: clean });
@@ -172,7 +233,7 @@ export default function VoiceDemo() {
 
   function end() {
     recognition.current?.stop();
-    if (speechOn.current) window.speechSynthesis.cancel();
+    silence();
     history.current = [];
     setBusy(false);
     setStatus("ended");

@@ -21,9 +21,15 @@ const IP_WINDOW_MS = 10 * 60_000;
 const IP_MAX = 24;
 const DAILY_MAX = 600;
 
+/* Speech is metered per character, and one reply is several sentences, so it
+   gets its own allowance rather than eating the conversation budget. */
+const SPEAK_WINDOW_MS = 10 * 60_000;
+const SPEAK_MAX = 160;
+
 type Bucket = { count: number; resetAt: number };
 
 const ips = new Map<string, Bucket>();
+const speaks = new Map<string, Bucket>();
 let daily: Bucket = { count: 0, resetAt: 0 };
 
 function nextMidnightUTC(now: number): number {
@@ -69,6 +75,19 @@ export function checkLimits(ip: string, turn: number): LimitVerdict {
 
   daily.count += 1;
   return { allowed: true };
+}
+
+/** true if this address may synthesise another sentence */
+export function checkSpeakLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = speaks.get(ip);
+  if (!bucket || now >= bucket.resetAt) {
+    speaks.set(ip, { count: 1, resetAt: now + SPEAK_WINDOW_MS });
+    return true;
+  }
+  if (bucket.count >= SPEAK_MAX) return false;
+  bucket.count += 1;
+  return true;
 }
 
 export function clientIp(req: Request): string {
