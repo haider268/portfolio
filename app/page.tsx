@@ -4,7 +4,7 @@ import { CONTACT } from "@/lib/contact";
 import Masthead from "@/components/Masthead";
 import Colophon from "@/components/Colophon";
 import Index from "@/components/Index";
-import Out from "@/components/Out";
+import Anchor from "@/components/Anchor";
 import Reveal from "@/components/Reveal";
 
 /* An intro and a set of doors. Nothing is explained here — every explanation
@@ -84,7 +84,7 @@ export default function Home() {
             </h2>
             <ul className="index">
               <Reveal as="li">
-                <Out className="entry" href="/demo">
+                <Anchor className="entry" href="/demo">
                   <span className="entry__title">Talk to it</span>
                   <span className="entry__hint">
                     Answers from these pages, shows every tool call
@@ -92,7 +92,7 @@ export default function Home() {
                   <span className="entry__go" aria-hidden="true">
                     →
                   </span>
-                </Out>
+                </Anchor>
               </Reveal>
             </ul>
           </section>
@@ -106,10 +106,10 @@ export default function Home() {
                 <span className="label">Email</span>
                 <span>{CONTACT.email}</span>
               </a>
-              <Out className="contact__line" href={CONTACT.linkedin}>
+              <Anchor className="contact__line" href={CONTACT.linkedin}>
                 <span className="label">LinkedIn</span>
                 <span>linkedin.com/in/haiderali514</span>
-              </Out>
+              </Anchor>
             </Reveal>
           </section>
         </main>

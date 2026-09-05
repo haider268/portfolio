@@ -1,5 +1,5 @@
 import type { MDXComponents } from "mdx/types";
-import Out from "./Out";
+import Anchor from "./Anchor";
 import Trace from "./Trace";
 import FailureTiers from "./FailureTiers";
 import SystemDiagram from "./SystemDiagram";
@@ -15,7 +15,7 @@ export function Note({ children }: { children: React.ReactNode }) {
 }
 
 export const mdxComponents: MDXComponents = {
-  a: ({ href = "", children }) => <Out href={href}>{children}</Out>,
+  a: ({ href = "", children }) => <Anchor href={href}>{children}</Anchor>,
   blockquote: (props) => <blockquote className="pullquote" {...props} />,
   hr: () => <hr className="prose__rule" />,
   Note,

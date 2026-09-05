@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Out from "@/components/Out";
+import Anchor from "@/components/Anchor";
 import Masthead from "@/components/Masthead";
 import Colophon from "@/components/Colophon";
 import VoiceDemo from "@/components/VoiceDemo";
@@ -39,8 +39,8 @@ export default function Page() {
               <p>
                 Speech runs in your browser, so you can talk to it or type. It
                 reads the same files that render the{" "}
-                <Out href="/#work">case studies</Out> and{" "}
-                <Out href="/#capabilities">capability pages</Out> — it cannot
+                <Anchor href="/#work">case studies</Anchor> and{" "}
+                <Anchor href="/#capabilities">capability pages</Anchor> — it cannot
                 tell you anything the site does not say.
               </p>
               <p>
