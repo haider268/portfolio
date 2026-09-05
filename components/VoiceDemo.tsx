@@ -56,6 +56,11 @@ export default function VoiceDemo() {
      If the server has no voice configured it answers 503 once and we drop to
      the browser's own voice for the session. */
   const audioQueue = useRef<Promise<void>>(Promise.resolve());
+  /* Synthesis runs one sentence at a time — Cartesia rejects concurrent calls,
+     and a rejected sentence would switch voice mid-reply. One at a time is
+     still well ahead of playback: a sentence renders in about a second and
+     takes several to speak. */
+  const fetchQueue = useRef<Promise<string | null>>(Promise.resolve(null));
   const audioEl = useRef<HTMLAudioElement | null>(null);
   const useBrowserVoice = useRef(false);
   const stopped = useRef(false);
@@ -97,10 +102,13 @@ export default function VoiceDemo() {
         browserSpeak(text);
         return;
       }
-      // chain onto the queue so sentences play in the order they arrived,
-      // however out of order their audio comes back
-      audioQueue.current = audioQueue.current.then(async () => {
-        if (stopped.current) return;
+
+      /* Start synthesising the moment the sentence arrives, rather than when
+         the previous one finishes speaking. Every sentence is in flight at
+         once, so the only wait is for the first — without this there is a
+         round trip of silence between every sentence. */
+      const pending = fetchQueue.current.then(async () => {
+        if (stopped.current || useBrowserVoice.current) return null;
         try {
           const res = await fetch("/api/speak", {
             method: "POST",
@@ -108,24 +116,37 @@ export default function VoiceDemo() {
             body: JSON.stringify({ text }),
           });
           if (res.status === 503) {
+            // no voice configured: this session uses the browser's own
             useBrowserVoice.current = true;
-            browserSpeak(text);
-            return;
+            return null;
           }
           if (!res.ok) throw new Error(String(res.status));
-
-          const url = URL.createObjectURL(await res.blob());
-          const audio = new Audio(url);
-          audioEl.current = audio;
-          await new Promise<void>((resolve) => {
-            audio.onended = () => resolve();
-            audio.onerror = () => resolve();
-            audio.play().catch(() => resolve());
-          });
-          URL.revokeObjectURL(url);
+          return URL.createObjectURL(await res.blob());
         } catch {
-          browserSpeak(text);
+          return null;
         }
+      });
+      fetchQueue.current = pending;
+
+      // playback stays strictly in order, however the audio comes back
+      audioQueue.current = audioQueue.current.then(async () => {
+        const url = await pending;
+        if (!url) {
+          if (!stopped.current) browserSpeak(text);
+          return;
+        }
+        if (stopped.current) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        const audio = new Audio(url);
+        audioEl.current = audio;
+        await new Promise<void>((resolve) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+        URL.revokeObjectURL(url);
       });
     },
     [browserSpeak]

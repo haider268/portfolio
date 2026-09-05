@@ -3,8 +3,8 @@ import { TOOL_NAMES } from "./tools";
 /* SPEECH SAFETY.
 
    The model is instructed never to speak tool syntax aloud. Instructions are
-   not a guarantee, and the failure is unusually ugly: a browser voice reading
-   out a JSON object to a recruiter. So the transport strips it as well.
+   not a guarantee, and the failure is unusually ugly: a synthesised voice
+   reading a JSON object to a recruiter. So the transport strips it as well.
 
    Belt and braces on purpose — the prompt is the request, this is the
    enforcement. Ported from the production agent this demo grew out of. */
@@ -25,12 +25,43 @@ export function cleanForSpeech(text: string): string {
   return out.replace(/\s+/g, " ").trim().replace(/^[,;:\-\s]+|[,;:\-\s]+$/g, "");
 }
 
-/* Split into sentence-sized chunks so the browser can start speaking the first
-   sentence while the rest is still arriving. On the free browser path this is
-   most of what makes the demo feel responsive rather than merely correct. */
+/* CHUNKING FOR SPEECH.
+
+   Speech is synthesised a chunk at a time, and the whole chunk is rendered
+   before any of it can play — so the first chunk is the wait the visitor
+   actually feels. Splitting on sentences alone is not enough: one long opening
+   sentence is several seconds of silence before anything is heard.
+
+   So a long sentence is split again at a clause boundary. The pause a comma
+   already implies covers the join, and the first thing the visitor hears
+   arrives in a fraction of the time. Later chunks are fetched while the
+   earlier ones play, so only the first one costs anything. */
+
+/** past this many characters a chunk is worth breaking at a clause */
+const LONG = 130;
+/** never emit a fragment shorter than this; it would sound clipped */
+const MIN = 45;
+
 const SENTENCE = /[^.!?]+[.!?]?/g;
+
+function splitLong(chunk: string): string[] {
+  if (chunk.length <= LONG) return [chunk];
+
+  // the last clause boundary that still leaves a speakable head
+  const head = chunk.slice(0, LONG);
+  const cut = Math.max(head.lastIndexOf(", "), head.lastIndexOf("; "), head.lastIndexOf(" — "));
+  if (cut < MIN) return [chunk];
+
+  const first = chunk.slice(0, cut + 1).trim();
+  const rest = chunk.slice(cut + 1).trim();
+  if (rest.length < MIN) return [chunk];
+  return [first, ...splitLong(rest)];
+}
 
 export function sentences(text: string): string[] {
   const cleaned = cleanForSpeech(text);
-  return (cleaned.match(SENTENCE) ?? []).map((s) => s.trim()).filter(Boolean);
+  return (cleaned.match(SENTENCE) ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .flatMap(splitLong);
 }

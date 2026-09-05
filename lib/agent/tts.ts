@@ -28,6 +28,20 @@ export type SpeechResult =
 export async function speak(text: string, signal: AbortSignal): Promise<SpeechResult> {
   if (!KEY) return { ok: false, status: 503, message: "no voice configured" };
 
+  /* Cartesia rate limits concurrent synthesis, and a rejected sentence would
+     otherwise fall back to the browser voice — switching voice mid-reply, which
+     sounds worse than either voice alone. Synthesis is a read, so it is safe to
+     repeat. The client also fetches sentences one at a time; this covers the
+     case where two visitors overlap. */
+  for (let attempt = 0; ; attempt++) {
+    const result = await once(text, signal);
+    const retryable = !result.ok && (result.status === 429 || result.status >= 500);
+    if (!retryable || attempt >= 2) return result;
+    await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+  }
+}
+
+async function once(text: string, signal: AbortSignal): Promise<SpeechResult> {
   const res = await fetch("https://api.cartesia.ai/tts/bytes", {
     method: "POST",
     headers: {
