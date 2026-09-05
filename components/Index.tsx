@@ -1,44 +1,30 @@
-import Link from "next/link";
 import type { Doc } from "@/lib/content";
+import Out from "./Out";
 import Reveal from "./Reveal";
 
-/* A contents page, not a card grid. Each entry is a rule, a number set in the
-   margin, the title at reading size and the one figure that entry earned. The
-   hover draws a line rather than lifting a box. */
+/* A list of doors. Title, the one line of frontmatter that says what it is,
+   and an arrow. The page behind it does the explaining. */
 export default function Index({
   docs,
   base,
-  weight = "compact",
 }: {
   docs: Doc[];
   /** "/work" or "/systems" */
   base: string;
-  weight?: "compact" | "feature";
 }) {
   return (
-    <ol className="index" data-weight={weight}>
-      {docs.map((d, i) => (
-        <Reveal as="li" key={d.slug} delay={i * 60}>
-          <Link className="entry" href={`${base}/${d.slug}`}>
-            <span className="entry__n" aria-hidden="true">
-              {String(i + 1).padStart(2, "0")}
+    <ul className="index">
+      {docs.map((d) => (
+        <Reveal as="li" key={d.slug}>
+          <Out className="entry" href={`${base}/${d.slug}`}>
+            <span className="entry__title">{d.title}</span>
+            {d.kicker && <span className="entry__hint">{d.kicker}</span>}
+            <span className="entry__go" aria-hidden="true">
+              →
             </span>
-            <span className="entry__main">
-              <span className="entry__title">{d.title}</span>
-              <span className="entry__summary">{d.summary}</span>
-              {weight === "feature" && d.stack.length > 0 && (
-                <span className="entry__stack">{d.stack.join("  ·  ")}</span>
-              )}
-            </span>
-            <span className="entry__aside">
-              {d.metric && <span className="entry__metric">{d.metric}</span>}
-              <span className="entry__go" aria-hidden="true">
-                Read
-              </span>
-            </span>
-          </Link>
+          </Out>
         </Reveal>
       ))}
-    </ol>
+    </ul>
   );
 }

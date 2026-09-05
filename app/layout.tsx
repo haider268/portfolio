@@ -36,14 +36,11 @@ export const metadata: Metadata = {
   },
 };
 
-/* Runs synchronously while the browser parses <head>, so both flags are on
-   <html> before first paint.
-
-   theme — without this the page flashes the OS theme before the stored choice
-   applies. js — every hide-then-reveal rule in the stylesheet is scoped to
-   [data-js="on"], so if scripting is blocked or this script never runs, no
-   element is ever left hidden waiting for an observer that will not fire. */
-const BOOT_SCRIPT = `document.documentElement.dataset.js="on";try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
+/* Runs synchronously while the browser parses <head>, so the stored theme is
+   on <html> before first paint. Without it the page flashes the OS theme
+   before the stored choice applies. Nothing else depends on this script —
+   the scroll animations are CSS view timelines. */
+const BOOT_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({
   children,

@@ -1,20 +1,18 @@
 import Image from "next/image";
-import Link from "next/link";
 import { getCapabilities, getCaseStudies } from "@/lib/content";
 import { CONTACT } from "@/lib/contact";
 import Masthead from "@/components/Masthead";
 import Colophon from "@/components/Colophon";
-import SystemDiagram from "@/components/SystemDiagram";
 import Index from "@/components/Index";
+import Out from "@/components/Out";
 import Reveal from "@/components/Reveal";
 
-/* The homepage is a way in, not the content. Every section is a title, a line,
-   and a door. The writing lives on the pages behind them. */
+/* An intro and a set of doors. Nothing is explained here — every explanation
+   lives on the page behind the link. */
 
 export default function Home() {
   const capabilities = getCapabilities("automation");
   const caseStudies = getCaseStudies("automation");
-  const flagship = caseStudies[0];
 
   return (
     <>
@@ -48,15 +46,15 @@ export default function Home() {
                   width={1200}
                   height={1500}
                   priority
-                  sizes="(max-width: 62rem) 60vw, 20rem"
+                  sizes="(max-width: 62rem) 60vw, 19rem"
                 />
               </div>
 
               <div className="hero__text">
                 <p className="lead hero__lead">
-                  I build voice agents and automation that take a lead from ad
-                  click to booked appointment without a receptionist, in any
-                  timezone.
+                  I&rsquo;m Haider. I build voice agents and automation that take
+                  a lead from ad click to booked appointment without a
+                  receptionist, in any timezone.
                 </p>
                 <p className="hero__note">
                   Every lead got a call within a minute of submitting the form.
@@ -66,79 +64,52 @@ export default function Home() {
             </div>
           </section>
 
-          <section id="system" className="band" aria-labelledby="system-h">
-            <div className="opener opener--wide">
-              <h2 className="title" id="system-h">
-                One lead, end to end
-              </h2>
-              <p className="lead">
-                Ad to CRM to a call inside sixty seconds. Booked on the call,
-                confirmed by text before hanging up.
-              </p>
-            </div>
-
-            <Reveal>
-              <SystemDiagram />
-            </Reveal>
-
-            {flagship && (
-              <p className="cta">
-                <Link href={`/work/${flagship.slug}`}>Read what happened</Link>
-              </p>
-            )}
-          </section>
-
           <section id="work" className="band" aria-labelledby="work-h">
-            <div className="opener opener--wide">
-              <h2 className="title" id="work-h">
-                Work
-              </h2>
-            </div>
-            <Index docs={caseStudies} base="/work" weight="feature" />
+            <h2 className="title band__h" id="work-h">
+              Work
+            </h2>
+            <Index docs={caseStudies} base="/work" />
           </section>
 
           <section id="capabilities" className="band" aria-labelledby="cap-h">
-            <div className="opener opener--wide">
-              <h2 className="title" id="cap-h">
-                How it is built
-              </h2>
-              <p className="lead">
-                Mechanism, tradeoffs, and what each piece had to survive.
-              </p>
-            </div>
+            <h2 className="title band__h" id="cap-h">
+              What I build
+            </h2>
             <Index docs={capabilities} base="/systems" />
           </section>
 
           <section id="agent" className="band" aria-labelledby="agent-h">
-            <div className="opener opener--wide">
-              <h2 className="title" id="agent-h">
-                Ask the agent
-              </h2>
-              <p className="lead">
-                A working agent that answers from these pages and shows every
-                tool call as it fires.
-              </p>
-            </div>
-            <p className="cta">
-              <Link href="/demo">Talk to it</Link>
-            </p>
+            <h2 className="title band__h" id="agent-h">
+              Ask the agent
+            </h2>
+            <ul className="index">
+              <Reveal as="li">
+                <Out className="entry" href="/demo">
+                  <span className="entry__title">Talk to it</span>
+                  <span className="entry__hint">
+                    Answers from these pages, shows every tool call
+                  </span>
+                  <span className="entry__go" aria-hidden="true">
+                    →
+                  </span>
+                </Out>
+              </Reveal>
+            </ul>
           </section>
 
           <section id="contact" className="band" aria-labelledby="contact-h">
-            <div className="opener opener--wide">
-              <h2 className="title" id="contact-h">
-                Contact
-              </h2>
-            </div>
+            <h2 className="title band__h" id="contact-h">
+              Contact
+            </h2>
             <Reveal className="contact__lines">
               <a className="contact__line" href={`mailto:${CONTACT.email}`}>
                 <span className="label">Email</span>
                 <span>{CONTACT.email}</span>
               </a>
-              <a className="contact__line" href={CONTACT.linkedin} rel="me noopener">
+              <Out className="contact__line" href={CONTACT.linkedin}>
                 <span className="label">LinkedIn</span>
                 <span>linkedin.com/in/haiderali514</span>
-              </a>
+              </Out>
             </Reveal>
           </section>
         </main>

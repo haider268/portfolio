@@ -141,6 +141,16 @@ img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration-color: var(--rule); text-underline-offset: .22em; text-decoration-thickness: 1px; }
 a:hover { text-decoration-color: var(--accent); }
 
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .skip {
   position: absolute; left: -9999px; top: 0; z-index: 50;
   background: var(--ink); color: var(--paper);
@@ -249,8 +259,7 @@ section { position: relative; }
    the column. The running head is a folio, not a decorative eyebrow —
    it names the section for someone scanning the margin. */
 .opener { border-top: 1px solid var(--ink); padding-top: 1.15rem; margin-bottom: 2.25rem; }
-.opener--wide .title { max-width: 24ch; }
-.opener--wide .lead { margin-top: .9rem; }
+.band__h { margin-bottom: 1.1rem; }
 .opener .title { max-width: 20ch; }
 .opener .body > .lead { margin-top: 1.1rem; }
 
@@ -318,17 +327,28 @@ section { position: relative; }
 
 /* ═══ scroll reveal ════════════════════════════════════════════════════
 
-   Gated behind [data-js="on"], which the inline head script sets. If the
-   script is blocked or fails, nothing is ever hidden and the page reads in
-   full — the animation is the enhancement, not the delivery mechanism. */
+   A CSS view timeline, not a script. The element animates against its own
+   position in the scrollport, so nothing waits on React and nothing can be
+   left stuck at opacity 0 because hydration was slow. Browsers without view
+   timelines simply show the content; so does reduced motion. */
 
-[data-js="on"] .reveal { opacity: 0; transform: translateY(14px); }
-[data-js="on"] .reveal[data-shown] {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity .62s var(--ease-out) var(--reveal-delay, 0ms),
-    transform .62s var(--ease-out) var(--reveal-delay, 0ms);
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* forwards, not both: outside the active range the element keeps its own
+       visible base style. If the timeline is ever inactive — a viewport taller
+       than the page, print, an embed that cannot scroll — the content shows
+       rather than disappearing. */
+    .reveal {
+      animation: reveal-in 1ms linear forwards;
+      animation-timeline: view();
+      animation-range: entry 2% entry 36%;
+    }
+  }
 }
 
 /* ═══ hero ═════════════════════════════════════════════════════════════
@@ -379,8 +399,7 @@ section { position: relative; }
 
 /* ═══ bands, figures, captions ═════════════════════════════════════════ */
 
-.band { padding-top: clamp(4.25rem, 9vw, 7.5rem); }
-.band__inner { margin-top: clamp(2.5rem, 5vw, 4rem); }
+.band { padding-top: clamp(3rem, 6vw, 5rem); }
 
 .figure { margin: 0; }
 .figure figcaption, .caption {
@@ -436,27 +455,34 @@ section { position: relative; }
 @keyframes dgm-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes dgm-in { from { opacity: 0; } to { opacity: 1; } }
 
-[data-js="on"] .dgm-box, [data-js="on"] .dgm-wire { stroke-dasharray: 1; stroke-dashoffset: 1; }
-[data-js="on"] .dgm-box--dashed { stroke-dasharray: 1; }
-[data-js="on"] .dgm svg > g { opacity: 0; }
-[data-js="on"] .dgm-t, [data-js="on"] .dgm-s, [data-js="on"] .dgm-f { opacity: 0; }
+/* One named timeline on the figure; every stroke inside reads it and offsets
+   its range by --i, so the drawing propagates left to right as the figure
+   scrolls in. Unsupported, or reduced motion, means fully drawn. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .dgm { view-timeline-name: --dgm; }
 
-[data-js="on"] .reveal[data-shown] .dgm svg > g {
-  animation: dgm-in .01s linear both;
-  animation-delay: calc(var(--i, 0) * 90ms);
-}
-[data-js="on"] .reveal[data-shown] .dgm-box,
-[data-js="on"] .reveal[data-shown] .dgm-wire {
-  animation: dgm-draw .5s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 90ms);
-}
-/* the dashed boxes keep their dash pattern once drawn */
-[data-js="on"] .reveal[data-shown] .dgm-box--dashed { animation-name: dgm-draw; }
-[data-js="on"] .reveal[data-shown] .dgm-t,
-[data-js="on"] .reveal[data-shown] .dgm-s,
-[data-js="on"] .reveal[data-shown] .dgm-f {
-  animation: dgm-in .38s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 90ms + 210ms);
+    /* the base state is drawn; only the keyframes retract the stroke, so an
+       inactive timeline leaves a complete diagram */
+    .dgm-box, .dgm-wire {
+      stroke-dasharray: 1;
+      animation: dgm-draw 1ms linear forwards;
+      animation-timeline: --dgm;
+      animation-range: entry calc(4% + var(--i, 0) * 3.2%) entry calc(26% + var(--i, 0) * 3.2%);
+    }
+    .dgm-box--dashed { stroke-dasharray: 1; }
+
+    .dgm svg > g {
+      animation: dgm-in 1ms linear forwards;
+      animation-timeline: --dgm;
+      animation-range: entry calc(3% + var(--i, 0) * 3.2%) entry calc(5% + var(--i, 0) * 3.2%);
+    }
+    .dgm-t, .dgm-s, .dgm-f {
+      animation: dgm-in 1ms linear forwards;
+      animation-timeline: --dgm;
+      animation-range: entry calc(16% + var(--i, 0) * 3.2%) entry calc(28% + var(--i, 0) * 3.2%);
+    }
+  }
 }
 
 /* ═══ the trace ════════════════════════════════════════════════════════ */
@@ -530,20 +556,18 @@ section { position: relative; }
   margin-top: .12rem;
 }
 
-/* ═══ editorial index ══════════════════════════════════════════════════ */
+/* ═══ index of doors ══════════════════════════════════════════════════ */
 
 .index { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
 .index > li { border-bottom: 1px solid var(--rule); }
 
-/* the entry shares the page spine: number in the margin column, title
-   starting exactly where every other reading column starts */
 .entry {
   position: relative;
   display: grid;
-  grid-template-columns: var(--col-note) minmax(0, 1fr) minmax(0, 11rem);
-  column-gap: var(--gutter);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  padding: 1.5rem 0;
+  column-gap: 1.5rem;
+  padding: 1.15rem 0;
   text-decoration: none;
 }
 .entry::after {
@@ -555,56 +579,32 @@ section { position: relative; }
 }
 .entry:hover::after, .entry:focus-visible::after { transform: scaleX(1); }
 
-.entry__n {
-  font-family: var(--mono); font-size: var(--t-micro);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: .1em;
-  color: var(--muted);
-}
-.entry__main { display: block; min-width: 0; }
 .entry__title {
-  display: block;
-  font-size: clamp(1.2rem, 2.4vw, 1.45rem);
-  line-height: 1.22;
+  font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+  line-height: 1.25;
   font-variation-settings: "opsz" 26;
   letter-spacing: -.016em;
   transition: color .25s var(--ease);
 }
 .entry:hover .entry__title { color: var(--accent); }
-.entry__summary {
-  display: block;
-  margin-top: .45rem;
-  max-width: 56ch;
-  font-size: var(--t-small);
-  line-height: 1.55;
-  color: var(--muted);
-}
-.entry__stack {
-  display: block;
-  margin-top: .75rem;
-  font-family: var(--mono); font-size: var(--t-micro);
-  letter-spacing: .06em;
-  color: var(--muted);
-}
-.entry__aside { display: flex; flex-direction: column; align-items: flex-end; gap: .55rem; text-align: right; }
-.entry__metric {
-  font-family: var(--mono); font-size: var(--t-mono);
-  font-variant-numeric: tabular-nums; font-weight: 500;
-  line-height: 1.45;
-  color: var(--accent);
-}
-.entry__go {
-  font-family: var(--mono); font-size: var(--t-micro);
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--muted);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity .3s var(--ease), transform .3s var(--ease-out);
-}
-.entry:hover .entry__go, .entry:focus-visible .entry__go { opacity: 1; transform: none; }
 
-.index[data-weight="feature"] .entry { padding: 2rem 0 2.1rem; }
-.index[data-weight="feature"] .entry__title { font-size: clamp(1.45rem, 3.2vw, 1.9rem); font-variation-settings: "opsz" 32; }
+.entry__hint {
+  grid-column: 1;
+  margin-top: .3rem;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.entry__go {
+  grid-row: 1;
+  grid-column: 2;
+  font-family: var(--mono);
+  color: var(--muted);
+  transition: transform .3s var(--ease-out), color .25s var(--ease);
+}
+.entry:hover .entry__go { color: var(--accent); transform: translateX(4px); }
 
 /* ═══ reliability tiers ════════════════════════════════════════════════ */
 
@@ -952,8 +952,6 @@ section { position: relative; }
   .hero__grid { grid-template-columns: minmax(0, 1fr); row-gap: 1.75rem; align-items: start; }
   .hero__portrait { max-width: 16rem; }
 
-  .entry { grid-template-columns: 2.75rem minmax(0, 1fr); column-gap: 1.25rem; }
-  .entry__aside { grid-column: 2; align-items: flex-start; text-align: left; margin-top: .85rem; }
 }
 
 @media (max-width: 47rem) {
@@ -966,7 +964,6 @@ section { position: relative; }
     min-height: 44px;
   }
 
-  .entry__go { display: none; }
 
   .pair { grid-template-columns: minmax(0, 1fr); row-gap: .55rem; }
   .pair__fix { padding-left: .9rem; border-left: 1px solid var(--rule); }
@@ -995,25 +992,6 @@ section { position: relative; }
   .hero__portrait,
   .hero__lead,
   .hero__note { animation: none; }
-
-  [data-js="on"] .reveal { opacity: 1; transform: none; }
-  [data-js="on"] .reveal[data-shown] { transition: none; }
-
-  [data-js="on"] .dgm-box,
-  [data-js="on"] .dgm-wire { stroke-dashoffset: 0; }
-  [data-js="on"] .dgm-box--dashed { stroke-dasharray: 3.5 3; }
-  [data-js="on"] .dgm svg > g,
-  [data-js="on"] .dgm-t,
-  [data-js="on"] .dgm-s,
-  [data-js="on"] .dgm-f { opacity: 1; animation: none; }
-  /* these must match the specificity of the rules that start the draw,
-     otherwise the delayed groups sit at opacity 0 and the figure is blank */
-  [data-js="on"] .reveal[data-shown] .dgm svg > g,
-  [data-js="on"] .reveal[data-shown] .dgm-box,
-  [data-js="on"] .reveal[data-shown] .dgm-wire,
-  [data-js="on"] .reveal[data-shown] .dgm-t,
-  [data-js="on"] .reveal[data-shown] .dgm-s,
-  [data-js="on"] .reveal[data-shown] .dgm-f { animation: none; opacity: 1; }
 
   .trace__row { opacity: 1; }
 }

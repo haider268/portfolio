@@ -87,7 +87,7 @@ export default function SystemDiagram() {
         <g style={{ "--i": 7 } as React.CSSProperties}>
           <line className="dgm-wire" pathLength="1" x1="661" y1="260" x2="661" y2="304" />
           <line className="dgm-wire" pathLength="1" x1="560" y1="304" x2="950" y2="304" />
-          <text className="dgm-s" x="812" y="294">every fact comes from a tool call — never from context</text>
+          <text className="dgm-s" x="830" y="294">every fact is a live read</text>
         </g>
 
         <g style={{ "--i": 8 } as React.CSSProperties}>

@@ -1,3 +1,5 @@
+import Out from "./Out";
+
 export default function Colophon() {
   return (
     <footer className="colophon">
@@ -8,9 +10,9 @@ export default function Colophon() {
       </p>
       <p className="colophon__links">
         <a href="mailto:haiderali2689832@gmail.com">haiderali2689832@gmail.com</a>
-        <a href="https://www.linkedin.com/in/haiderali514" rel="me noopener">
+        <Out href="https://www.linkedin.com/in/haiderali514">
           linkedin.com/in/haiderali514
-        </a>
+        </Out>
       </p>
       {/* Domain is parked. When it is chosen, this file and the metadataBase
           in app/layout.tsx are the only two places that change. */}

@@ -73,8 +73,8 @@ export default function FailureTiers() {
             <span>{tier.gloss}</span>
           </p>
           <dl className="pairs">
-            {tier.pairs.map((p, i) => (
-              <Reveal key={p.fail} className="pair" delay={i * 70}>
+            {tier.pairs.map((p) => (
+              <Reveal key={p.fail} className="pair">
                 <dt className="pair__fail">{p.fail}</dt>
                 <dd className="pair__fix">{p.fix}</dd>
               </Reveal>
