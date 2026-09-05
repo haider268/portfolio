@@ -53,23 +53,67 @@ throughput.
 `/demo` runs over the same MDX corpus that renders the site — one body of
 content, two consumers, so the two cannot drift apart.
 
-Speech runs in the browser (Web Speech API), so the server only moves text.
-Text input is always available: Firefox has no speech recognition and Safari's
-is unreliable.
+Speech recognition runs in the browser (Web Speech API). Text input is always
+available: Firefox has no recognition and Safari's is unreliable.
 
-Set one key in `.env.local` (see `.env.example`):
+Everything below is optional. Each missing piece degrades to something honest
+rather than breaking, so the demo is never a dead button in front of a visitor.
+
+| Missing | What happens instead |
+| --- | --- |
+| `GEMINI_API_KEY` / `GROQ_API_KEY` | `/api/agent` searches the corpus directly and says so |
+| `CARTESIA_API_KEY` | the browser's own voice, which is free and sounds it |
+| Google credentials | no times are offered; it takes the request by email |
+
+### Model
 
 ```
 GEMINI_API_KEY=...        # free: https://aistudio.google.com/apikey
 # or GROQ_API_KEY=...     # whichever is present wins; LLM_PROVIDER forces one
 ```
 
-Without a key nothing breaks — `/api/agent` falls back to searching the corpus.
+### Voice
 
-`lib/agent/limits.ts` holds a session cap, a per-IP rate limit and a daily
-ceiling. They exist so one visitor cannot exhaust the free-tier quota for
-everyone else. **None of it is ever shown to a visitor**: when a limit is hit
-the agent closes the conversation politely and offers email. They are
+`CARTESIA_API_KEY`. `/api/speak` takes one sentence and returns mp3, so the
+first sentence plays while the rest of the reply is still generating. The key
+never reaches the browser.
+
+### Calendar
+
+Four values turn on real availability and real bookings. Google emails the
+invitation from whichever account owns the calendar, so the booking and the
+invite are one API call — there is no mail server here.
+
+1. console.cloud.google.com -> new project -> enable the Google Calendar API
+2. OAuth consent screen -> External -> add your own Gmail as a test user
+3. Credentials -> OAuth client ID -> Web application, redirect URI
+   `http://localhost:5710/callback`
+4. Put the id and secret in `.env.local`, then `node scripts/google-token.mjs`
+5. Make a **separate** calendar for demo bookings and copy its Calendar ID
+
+```
+GOOGLE_CLIENT_ID=      GOOGLE_REFRESH_TOKEN=
+GOOGLE_CLIENT_SECRET=  GOOGLE_CALENDAR_ID=
+```
+
+Point it at a dedicated calendar, not your main one — anything reachable from a
+public page is eventually found by someone with nothing better to do.
+
+Working hours come from `BOOKING_TIMEZONE`, `BOOKING_OPEN_HOUR`,
+`BOOKING_CLOSE_HOUR` and `BOOKING_SLOT_MINUTES`; weekends are skipped.
+
+The browser sends its own IANA zone with every turn, so slots are offered on the
+visitor's clock and stored as instants. Availability is re-read at the moment of
+writing, because a slot read three turns ago is a recollection rather than a
+fact, and the event id is derived from the email and the start time, so a retry
+returns the same booking instead of a second one.
+
+### Guardrails
+
+`lib/agent/limits.ts` holds a session cap, a per-address rate limit, a daily
+model ceiling, a separate speech allowance, and a booking cap of two per address
+per day against twelve a day overall. **None of it is ever shown to a visitor**:
+when a limit is hit the agent closes politely and offers email. They are
 per-process, so on a multi-instance host they are a brake rather than a lock.
 
 ## Layout of the code
@@ -77,7 +121,8 @@ per-process, so on a multi-instance host they are a brake rather than a lock.
 ```
 app/globals.css      the whole design system: tokens, then components
 lib/content.ts       the content engine — do not weaken the validation
-lib/agent/           corpus, tools, prompt, provider, guardrails
+lib/agent/           corpus, tools, prompt, provider, voice, calendar, limits
+scripts/             one-time Google refresh-token helper
 components/          one component per idea, each commented with why
 public/portrait.jpg  cropped from ../Haider-Image.jpeg; the only image
 ```

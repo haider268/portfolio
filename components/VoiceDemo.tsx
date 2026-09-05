@@ -158,7 +158,13 @@ export default function VoiceDemo() {
         const res = await fetch("/api/agent", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text: clean, history: history.current }),
+          body: JSON.stringify({
+            text: clean,
+            history: history.current,
+            // the visitor's own zone, so every time the agent quotes is on
+            // their clock rather than mine
+            tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
         });
         if (!res.ok || !res.body) throw new Error(`request failed (${res.status})`);
 

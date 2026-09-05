@@ -26,7 +26,7 @@ function sse(event: unknown): Uint8Array {
 }
 
 export async function POST(req: Request) {
-  let payload: { text?: string; history?: Turn[] };
+  let payload: { text?: string; history?: Turn[]; tz?: string };
   try {
     payload = await req.json();
   } catch {
@@ -37,7 +37,11 @@ export async function POST(req: Request) {
   const history = (payload.history ?? []).slice(-12);
   if (!text) return Response.json({ error: "empty message" }, { status: 400 });
 
-  const verdict = checkLimits(clientIp(req), history.filter((h) => h.role === "user").length);
+  const ip = clientIp(req);
+  /* The visitor's own IANA zone, sent by the browser. Every time the agent
+     quotes is rendered on their clock — which is the thing this site is about. */
+  const tz = typeof payload.tz === "string" ? payload.tz.slice(0, 64) : "";
+  const verdict = checkLimits(ip, history.filter((h) => h.role === "user").length);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -69,7 +73,7 @@ export async function POST(req: Request) {
 
       try {
         for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
-          const result = await turn(systemPrompt(), msgs, req.signal);
+          const result = await turn(systemPrompt(tz), msgs, req.signal);
 
           if (!result.calls?.length) {
             finish(result.text?.trim() || "Sorry — could you say that again?");
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
           msgs.push({ role: "calls", calls: result.calls, raw: result.raw });
           for (const call of result.calls) {
             const started = Date.now();
-            const out = dispatch(call.name, call.args);
+            const out = await dispatch(call.name, call.args, { tz, ip, signal: req.signal });
             // the visitor watches this fire before the answer arrives
             send({
               type: "tool",

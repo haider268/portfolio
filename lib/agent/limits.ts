@@ -26,11 +26,20 @@ const DAILY_MAX = 600;
 const SPEAK_WINDOW_MS = 10 * 60_000;
 const SPEAK_MAX = 160;
 
+/* Bookings write to a real calendar and email a real person, so they get the
+   tightest budget on the site. The calendar is a dedicated one, but a stranger
+   should still not be able to fill a day of it from one browser tab. */
+const BOOK_WINDOW_MS = 24 * 60 * 60_000;
+const BOOK_MAX_PER_IP = 2;
+const BOOK_MAX_PER_DAY = 12;
+
 type Bucket = { count: number; resetAt: number };
 
 const ips = new Map<string, Bucket>();
 const speaks = new Map<string, Bucket>();
+const books = new Map<string, Bucket>();
 let daily: Bucket = { count: 0, resetAt: 0 };
+let dailyBooks: Bucket = { count: 0, resetAt: 0 };
 
 function nextMidnightUTC(now: number): number {
   const d = new Date(now);
@@ -75,6 +84,26 @@ export function checkLimits(ip: string, turn: number): LimitVerdict {
 
   daily.count += 1;
   return { allowed: true };
+}
+
+/** true if this address may write another booking to the calendar */
+export function checkBookingLimit(ip: string): boolean {
+  const now = Date.now();
+
+  if (now >= dailyBooks.resetAt) dailyBooks = { count: 0, resetAt: nextMidnightUTC(now) };
+  if (dailyBooks.count >= BOOK_MAX_PER_DAY) return false;
+
+  const bucket = books.get(ip);
+  if (!bucket || now >= bucket.resetAt) {
+    books.set(ip, { count: 1, resetAt: now + BOOK_WINDOW_MS });
+  } else if (bucket.count >= BOOK_MAX_PER_IP) {
+    return false;
+  } else {
+    bucket.count += 1;
+  }
+
+  dailyBooks.count += 1;
+  return true;
 }
 
 /** true if this address may synthesise another sentence */

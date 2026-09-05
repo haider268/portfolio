@@ -1,17 +1,26 @@
 import { createHash } from "node:crypto";
 import { contents, detail, search } from "./corpus";
 import { CONTACT } from "@/lib/contact";
+import { book, calendarReady, describe, freeSlots, HOST_TZ, isValidZone } from "./calendar";
+import { checkBookingLimit } from "./limits";
 
 /* Tool declarations in plain JSON Schema, plus the dispatch table that runs
    them. Single source of truth; the provider-specific shape is generated from
    it rather than maintained alongside it.
 
-   Ported in spirit from the reservation agent this demo grew out of: tools
-   return a structured {ok} result instead of raising, so a failure is
+   Tools return a structured {ok} result instead of raising, so a failure is
    something the model can say a sensible sentence about rather than an
    exception the turn dies inside. */
 
 export type ToolResult = Record<string, unknown> & { ok: boolean };
+
+/** what is known about this visitor, threaded into every tool */
+export type Ctx = {
+  /** the visitor's own IANA zone, so times are quoted on their clock */
+  tz: string;
+  ip: string;
+  signal: AbortSignal;
+};
 
 export const TOOLS = [
   {
@@ -20,9 +29,7 @@ export const TOOLS = [
       "Search the case studies and capability write-ups. Use this for any question about what was built, how something works, tradeoffs, or failure modes. Always search before answering.",
     parameters: {
       type: "object",
-      properties: {
-        query: { type: "string", description: "the topic to search for" },
-      },
+      properties: { query: { type: "string", description: "the topic to search for" } },
       required: ["query"],
     },
   },
@@ -32,31 +39,35 @@ export const TOOLS = [
       "Read a full case study or capability page by slug. Use after search_experience when the excerpt is not enough.",
     parameters: {
       type: "object",
-      properties: {
-        slug: { type: "string", description: "the page slug, e.g. wellness-launch" },
-      },
+      properties: { slug: { type: "string", description: "the page slug, e.g. wellness-launch" } },
       required: ["slug"],
     },
   },
   {
+    name: "check_availability",
+    description:
+      "Read real open slots from the calendar. Call this before offering any time. Never invent or guess availability.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
     name: "book_meeting",
     description:
-      "Record a request to talk. ONLY call after the visitor has confirmed the details back to you in a later turn.",
+      "Book a slot on the calendar and email the invitation. The slot_id MUST be one of the exact slot_id values returned by check_availability. ONLY call after the visitor has confirmed the details back to you in a later turn.",
     parameters: {
       type: "object",
       properties: {
         name: { type: "string" },
         email: { type: "string" },
-        preferred_time: { type: "string", description: "in the visitor's own words" },
-        topic: { type: "string" },
+        slot_id: { type: "string", description: "the exact slot_id from check_availability" },
+        topic: { type: "string", description: "what they want to talk about, one short line" },
       },
-      required: ["name", "email", "topic"],
+      required: ["name", "email", "slot_id", "topic"],
     },
   },
   {
     name: "contact_request",
     description:
-      "Record a message for your inbox. ONLY call after the visitor has confirmed it back to you in a later turn.",
+      "Draft a message for your inbox when the visitor does not want a meeting. ONLY call after they have confirmed it back to you in a later turn.",
     parameters: {
       type: "object",
       properties: {
@@ -106,8 +117,7 @@ export function geminiDeclarations() {
 }
 
 /** Deterministic reference derived from the content of the request, not from a
-    clock or a random source. The same message submitted twice produces the same
-    reference, so a retry cannot create a second one. */
+    clock or a random source, so a retry cannot create a second one. */
 function reference(prefix: string, parts: (string | undefined)[]): string {
   const raw = parts.map((p) => (p ?? "").trim().toLowerCase()).join("|");
   return `${prefix}-${createHash("sha256").update(raw).digest("hex").slice(0, 8).toUpperCase()}`;
@@ -120,13 +130,22 @@ function mailto(subject: string, body: string): string {
 type Args = Record<string, unknown>;
 const str = (a: Args, k: string) => (typeof a[k] === "string" ? (a[k] as string) : undefined);
 
-const DISPATCH: Record<string, (args: Args) => ToolResult> = {
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+type Handler = (args: Args, ctx: Ctx) => ToolResult | Promise<ToolResult>;
+
+const DISPATCH: Record<string, Handler> = {
   search_experience(args) {
     const query = str(args, "query");
     if (!query) return { ok: false, error_code: "INVALID_ARGUMENTS", message: "query is required" };
     const hits = search(query, 3);
     if (hits.length === 0) {
-      return { ok: true, hits: [], note: "Nothing in the corpus matches. Say so plainly and offer a handoff.", contents: contents() };
+      return {
+        ok: true,
+        hits: [],
+        note: "Nothing in the corpus matches. Say so plainly and offer a handoff.",
+        contents: contents(),
+      };
     }
     return { ok: true, hits };
   },
@@ -135,32 +154,134 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
     const slug = str(args, "slug");
     if (!slug) return { ok: false, error_code: "INVALID_ARGUMENTS", message: "slug is required" };
     const d = detail(slug);
-    if (!d) return { ok: false, error_code: "NOT_FOUND", message: `No page with slug "${slug}".`, contents: contents() };
+    if (!d) {
+      return {
+        ok: false,
+        error_code: "NOT_FOUND",
+        message: `No page with slug "${slug}".`,
+        contents: contents(),
+      };
+    }
     return { ok: true, ...d };
   },
 
-  book_meeting(args) {
+  async check_availability(_args, ctx) {
+    if (!calendarReady()) {
+      return {
+        ok: true,
+        calendar: "not connected",
+        say: "Say you cannot see the calendar right now, and offer to take their details by email instead.",
+      };
+    }
+    try {
+      const slots = await freeSlots(ctx.signal, 6);
+      if (slots.length === 0) {
+        return { ok: true, slots: [], say: "Nothing open in the next week or so. Offer to take it by email." };
+      }
+      return {
+        ok: true,
+        visitor_timezone: ctx.tz,
+        slots: slots.map((s) => ({
+          slot_id: s.start,
+          // both clocks, because that is the whole point of the scheduling work
+          their_time: describe(new Date(s.start), ctx.tz),
+          my_time: describe(new Date(s.start), HOST_TZ),
+        })),
+        say: "Offer two or three of these in THEIR time, never in yours. Use the slot_id verbatim when booking.",
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        error_code: "CALENDAR_UNAVAILABLE",
+        message: e instanceof Error ? e.message : "calendar read failed",
+        say: "Say the calendar is not answering and offer to take their details by email.",
+      };
+    }
+  },
+
+  async book_meeting(args, ctx) {
     const name = str(args, "name");
     const email = str(args, "email");
+    const slot = str(args, "slot_id");
     const topic = str(args, "topic");
-    const when = str(args, "preferred_time");
-    if (!name || !email || !topic) {
-      return { ok: false, error_code: "INVALID_ARGUMENTS", message: "name, email and topic are all required" };
+
+    if (!name || !email || !topic || !slot) {
+      return {
+        ok: false,
+        error_code: "INVALID_ARGUMENTS",
+        message: "name, email, slot_id and topic are all required",
+      };
     }
-    const ref = reference("MTG", [name, email, topic, when]);
-    return {
-      ok: true,
-      reference: ref,
-      // Honest about what this does. There is no calendar behind this demo and
-      // pretending otherwise would be the one thing the whole site argues against.
-      recorded: "request drafted",
-      delivery: "not sent automatically — the visitor sends it",
-      send_url: mailto(
-        `Meeting request — ${name} [${ref}]`,
-        `Name: ${name}\nEmail: ${email}\nPreferred time: ${when ?? "not stated"}\nTopic: ${topic}\n\nDrafted by the site agent. Reference ${ref}.`
-      ),
-      say: "Tell them the request is drafted, give them the reference, and tell them to press Send on the draft — nothing is sent until they do.",
-    };
+    if (!EMAIL.test(email)) {
+      return {
+        ok: false,
+        error_code: "BAD_EMAIL",
+        message: "That email address does not look valid.",
+        say: "Ask them to repeat the email address; do not guess it.",
+      };
+    }
+
+    // no calendar configured: fall back to drafting a request they send
+    if (!calendarReady()) {
+      const ref = reference("MTG", [name, email, topic, slot]);
+      return {
+        ok: true,
+        reference: ref,
+        recorded: "request drafted",
+        delivery: "not sent automatically — the visitor sends it",
+        send_url: mailto(
+          `Meeting request — ${name} [${ref}]`,
+          `Name: ${name}\nEmail: ${email}\nPreferred: ${slot}\nTopic: ${topic}\n\nDrafted by the site agent. Reference ${ref}.`
+        ),
+        say: "Tell them it is drafted and they need to press Send — nothing goes out until they do.",
+      };
+    }
+
+    if (!checkBookingLimit(ctx.ip)) {
+      return {
+        ok: false,
+        error_code: "TOO_MANY_BOOKINGS",
+        message: "booking limit reached for this visitor",
+        say: "Say you have booked as much as you can for now, and give the email address instead.",
+      };
+    }
+
+    try {
+      const result = await book({ name, email, startISO: slot, topic }, ctx.signal);
+      if (!result.ok) {
+        return result.reason === "taken"
+          ? {
+              ok: false,
+              error_code: "SLOT_TAKEN",
+              message: result.message,
+              say: "Tell them that slot just went. Call check_availability again and offer the nearest alternatives.",
+            }
+          : {
+              ok: false,
+              error_code: "BOOKING_FAILED",
+              message: result.message,
+              say: "Say the booking did not go through, and offer the email address.",
+            };
+      }
+      return {
+        ok: true,
+        booked: true,
+        duplicate: result.duplicate,
+        their_time: describe(new Date(result.start), ctx.tz),
+        my_time: describe(new Date(result.start), HOST_TZ),
+        invite: "Google has emailed the invitation to them",
+        say: result.duplicate
+          ? "They already had this booking. Confirm the time on their own clock; do not book again."
+          : "Confirm the time in THEIR timezone and tell them the invite is in their inbox.",
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        error_code: "BOOKING_FAILED",
+        message: e instanceof Error ? e.message : "booking failed",
+        say: "Say the booking did not go through, and offer the email address.",
+      };
+    }
   },
 
   contact_request(args) {
@@ -191,17 +312,21 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
       reference: ref,
       email: CONTACT.email,
       linkedin: CONTACT.linkedin,
-      send_url: mailto(`Handoff from the site agent [${ref}]`, `Reason: ${reason}\n\n${summary}\n\nReference ${ref}.`),
+      send_url: mailto(
+        `Handoff from the site agent [${ref}]`,
+        `Reason: ${reason}\n\n${summary}\n\nReference ${ref}.`
+      ),
       say: "Say you will pick it up by email yourself, give the address, and stop trying to answer the question. Speak in the first person — never call yourself Haider.",
     };
   },
 };
 
-export function dispatch(name: string, args: Args): ToolResult {
+export async function dispatch(name: string, args: Args, ctx: Ctx): Promise<ToolResult> {
   const fn = DISPATCH[name];
   if (!fn) return { ok: false, error_code: "UNKNOWN_TOOL", message: `No such tool: ${name}` };
+  const safe: Ctx = { ...ctx, tz: isValidZone(ctx.tz) ? ctx.tz : HOST_TZ };
   try {
-    return fn(args ?? {});
+    return await fn(args ?? {}, safe);
   } catch (e) {
     return { ok: false, error_code: "TOOL_EXCEPTION", message: e instanceof Error ? e.message : String(e) };
   }
