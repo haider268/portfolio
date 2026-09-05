@@ -1,0 +1,61 @@
+---
+title: Messaging Automation
+kicker: SMS and email that respect the clock
+summary: Nurture and campaign orchestration running in parallel with the voice track, gated to each lead's local business hours, with compliance handled automatically.
+metric: gated to the lead's local hours
+order: 40
+stack: ["GHL", "Twilio", "Email"]
+---
+
+Every send honours the lead's timezone, not the client's. That sentence is the
+whole capability, and it is one line of intent standing on top of a gate that
+has to be in front of every outbound path rather than in front of most of them.
+
+Messaging runs in parallel with the [voice track](/systems/voice-agents), off
+the same pipeline event, because the two do different jobs. The call is the
+attempt to convert now. The messages are what happens when the call did not
+connect, or connected and did not close — a schedule the lead can respond to on
+their own time.
+
+## The gate
+
+A send is not "message a person"; it is "message a person, at a moment that is
+acceptable to them". So a queued message carries the recipient's resolved zone
+from the [scheduling engine](/systems/scheduling-timezone) and is released
+against the local clock, not the sender's.
+
+The consequence is that a campaign does not go out at once. It goes out as a
+wave that moves west, which looks wrong on a dashboard and is right on a phone.
+
+- Mid-call sends — the address, the booking link, the cancel link — bypass the
+  gate. The lead is on the phone; that is definitionally an acceptable moment.
+- Scheduled nurture does not. It waits.
+
+## Compliance as a mechanism
+
+STOP flips do-not-disturb automatically, and CRM-level enforcement sits behind
+it. Two mechanisms rather than one, because compliance failures are not the kind
+you find out about gently, and because the platform-level flag and the
+account-level flag fail in different ways.
+
+Opt-out is honoured across the channel, not the campaign. A person who stops one
+sequence has not asked to be moved to another one.
+
+## Tradeoffs
+
+**Parallel versus sequential.** Running messaging alongside the call risks a
+text arriving while the phone is ringing. Running it after the call means a lead
+who did not answer hears nothing for hours. Parallel wins, with the mid-call
+sends owned by the agent so the two tracks are coordinated on the one occasion
+they overlap.
+
+**Fewer, later sends.** The gate reduces total volume — some sends slip a day.
+It also removes the single fastest way to make a lead hate a brand.
+
+## Failure modes
+
+A lead who replies STOP mid-sequence and is queued for the next one. A message
+scheduled before the zone was resolved, which is why an unresolved zone holds
+the send rather than defaulting to the client's clock. Duplicate sends from a
+retried workflow, which is handled the same way duplicate writes are — see
+[reliability engineering](/systems/reliability).

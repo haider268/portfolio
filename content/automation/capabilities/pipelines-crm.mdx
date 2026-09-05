@@ -1,0 +1,62 @@
+---
+title: Lead Pipelines & CRM
+kicker: Tagging, staging, validation
+summary: Event-driven pipelines across GoHighLevel and others — with middleware validation that drops malformed records before a call is ever placed.
+metric: validation before the dial
+order: 30
+stack: ["GoHighLevel", "HubSpot", "Zoho", "Pipedrive", "n8n", "Make"]
+---
+
+Validation before the dial is the cheapest reliability win in the whole system,
+and it is cheap because of where it sits rather than what it does.
+
+A lead form will hand you a phone number with a letter in it, a country code
+that is not one, or a required field that the user skipped because the form let
+them. If that record reaches the dialler, the system spends a call attempt, a
+retry, a queue slot and a log line finding out what a regular expression could
+have told it for free. Worse, it produces a contact in the CRM that looks
+contactable and is not, which someone will later work through by hand.
+
+So the gate sits in middleware, between the webhook and anything that dials.
+
+## The shape
+
+Everything is event-driven. A form submission is an event; it is not a row
+somebody polls for. The chain is: receive, normalise, validate, write, tag,
+stage, then emit — and only the emit triggers outbound work.
+
+- **Normalise before validating.** Phone numbers arrive in half a dozen shapes.
+  Normalising to E.164 first means one validation rule instead of six.
+- **Tag and stage at write time.** Pipeline stage is set as the contact is
+  created, not by a later automation that may or may not have run. A record's
+  stage should never be a question about which workflows have fired.
+- **Emit once.** The downstream [voice](/systems/voice-agents) and
+  [messaging](/systems/messaging-automation) tracks both hang off the same
+  event, so they cannot disagree about whether a lead exists.
+
+Which CRM it is matters less than it appears. GoHighLevel is the common one;
+HubSpot, Zoho and Pipedrive have the same primitives with different names, and
+n8n or Make sit in the middle where a platform's native automation runs out of
+expressiveness.
+
+## Tradeoffs
+
+**Drop versus quarantine.** A record that fails validation is not deleted — it
+is written, flagged, and left out of the outbound path. Dropping it entirely
+saves a row and loses the ability to answer "how many leads did we actually
+get?", which is the first question the client asks.
+
+**Native automation versus middleware.** Platform-native builders are faster to
+change and harder to reason about. Anything conditional enough to need a comment
+belongs in middleware where it can be read.
+
+**Idempotency at the boundary.** Webhooks get delivered twice. The write is
+keyed so a duplicate delivery produces the same contact rather than a second
+one — see [reliability engineering](/systems/reliability).
+
+## Failure modes
+
+A webhook delivered twice. A webhook not delivered at all, which is why the
+receiving end is retried rather than trusted. A form that changes shape because
+somebody edited it in the ad platform, which is caught as a validation failure
+rather than as a silent field of empty strings.

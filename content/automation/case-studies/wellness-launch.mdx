@@ -1,0 +1,82 @@
+---
+title: A wellness brand's new-location launch
+kicker: Multi-location · several timezones
+summary: Pre-opening nurture into a launch-day blast, with an AI agent booking every appointment. No receptionist involved at any stage.
+metric: 42 booked in the first 36 hours
+order: 10
+year: "2025"
+role: AI Automation Engineer
+stack: ["GoHighLevel", "VAPI", "Meta Ads", "Twilio"]
+---
+
+A multi-location wellness brand was opening a new site, and the opening week is
+the only week that behaves like a deadline. Everything before it is
+anticipation you can bank; everything after it is ordinary trading. The brand
+already ran across several timezones, so "call the leads back" was never one
+instruction — it was a different instruction depending on which of them you
+meant.
+
+The build had to answer a narrower question than it looks. Not *how do we get
+leads* — paid social does that. The question was what happens to a lead in the
+minutes after the form is submitted, when there is nobody at a desk and the
+person who filled it in is still holding their phone.
+
+## What ran
+
+Leads were generated ahead of opening and held in an educational nurture rather
+than pitched to straight away. There was nothing to book yet, and a booking
+prompt with nothing behind it would have burned the intent. On launch day the
+whole cohort was activated at once.
+
+From there every lead took the same path, and no human touched any of it:
+
+- The form submission entered the CRM, tagged and staged, over a webhook.
+- [Middleware validated the record](/systems/pipelines-crm) — phone present and
+  parseable, required fields filled — **before** anything tried to dial it.
+- Inside sixty seconds a [voice agent](/systems/voice-agents) called.
+- On the call it handled the objection, [resolved the caller's
+  timezone](/systems/scheduling-timezone), read live availability, booked, and
+  sent the confirmation SMS with the address and a cancel link before hanging
+  up.
+- A [messaging track](/systems/messaging-automation) ran in parallel, gated to
+  each lead's own local business hours.
+- The booking was written back to the CRM, the pipeline advanced, and the
+  client's reporting updated itself.
+
+> The expensive part of answering a lead is the waiting. Waiting is also the
+> only part of it a person cannot do at three in the morning.
+
+## The numbers
+
+Around 550 to 600 leads went through it. Forty-two appointments were booked in
+the first thirty-six hours. The opening week filled.
+
+The figure that mattered internally was a different one: zero human touches.
+Not "reduced admin" — none. A receptionist was never in the path, so there was
+no point at which the system's throughput was capped by somebody being awake,
+and no shift during which the response time quietly went from one minute to the
+next morning.
+
+## What the call actually had to survive
+
+Booking on a live call is not a form with a voice on top. The agent had to hold
+turn-taking against a caller who interrupts, decline to answer anything it had
+not just read from a tool, recognise a voicemail greeting that sounds like a
+person, and get a name spelled correctly without turning the call into a
+spelling test.
+
+The timezone piece is the one most builds get wrong, because most builds are
+tested in one country and quietly break outside it. Here the lead and the
+client each had to see their own correct local time for the same appointment,
+and every call and message had to fire inside the lead's business hours rather
+than the brand's. That is [its own
+subsystem](/systems/scheduling-timezone), not a formatting step.
+
+## What is not in here
+
+<Open slug="the exported call review">
+Which calls failed, and what changed as a result, is the most useful thing that
+could sit at the bottom of this page — and it needs a redacted export plus the
+before-and-after of the prompt and endpointing changes. [The method is written
+up](/systems/call-qa); the specific findings from this deployment are not.
+</Open>

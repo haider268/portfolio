@@ -1,0 +1,68 @@
+---
+title: Call QA & Tuning
+kicker: The loop that makes it production
+summary: Reviewing real call recordings, finding where the agent failed, and tuning prompts, endpointing and routing against what actually happened.
+metric: the loop, not the launch
+order: 60
+stack: ["Recordings", "Transcripts", "Prompt iteration"]
+---
+
+Most people ship an agent and walk away. This is the part that separates a
+production system from a demo, and it is unglamorous enough that it is usually
+the first thing dropped.
+
+An agent that works in testing works against the conversations you imagined. A
+deployed agent meets the ones you did not: the caller who answers a question
+with a question, the one who gives a date as "next Thursday, no wait, the one
+after", the one whose first word is "is this a robot".
+
+## The loop
+
+Listen to real calls. Find the turn where it went wrong. Change one thing.
+Listen again.
+
+The discipline is in the second step. A call that ended badly usually failed
+several turns before the point where it sounded bad, and the failure is almost
+never the sentence the agent said — it is the state it was in when it said it.
+
+Failures sort into a small number of buckets, and each bucket has a different
+fix:
+
+- **Heard wrong.** Speech-to-text produced something plausible and incorrect.
+  Fixed at the provider settings, or with a readback on that specific field.
+- **Turn-taking wrong.** The agent spoke over the caller, or left a gap long
+  enough that the caller spoke first. Fixed at endpointing, not in the prompt.
+- **Decided wrong.** The agent had the right information and did the wrong
+  thing. This one is the prompt.
+- **Was not told.** The agent needed a fact nobody had given it a tool for.
+  Fixed by adding the tool, never by putting the fact in the prompt where it
+  will go stale.
+
+Sorting a failure into the wrong bucket is how prompts grow to two thousand
+words trying to fix a microphone problem.
+
+## Tradeoffs
+
+**One change at a time.** Slower, and it is the only way to know which change
+did it. Two edits and an improvement tells you nothing you can keep.
+
+**Tune for the median call, escalate the tail.** There is always a caller the
+agent should not be handling. Widening the agent to cover them makes it worse at
+the ninety percent it should be excellent at. That caller wants
+[a human](/systems/voice-agents), quickly.
+
+**Latency against accuracy, deliberately.** Endpointing and speech settings are
+one dial with a cost at both ends. It gets set per deployment against real
+recordings, not left at a default.
+
+## What this feeds
+
+Everything else. The [reliability tiers](/systems/reliability) are a list of
+things that were found this way; the failure modes on every other capability
+page were observed before they were designed against.
+
+<Open slug="a worked example">
+The strongest version of this page is one real call: the transcript, the turn
+where it failed, the change, and the same situation handled correctly
+afterwards. That needs a redacted recording and has not been assembled yet.
+</Open>

@@ -1,0 +1,73 @@
+---
+title: Reliability Engineering
+kicker: What happens when it breaks
+summary: Idempotency on writes, retry on reads, tool-grounded facts, automatic escalation on provider outage — and no silent failures anywhere.
+metric: no silent failures
+order: 50
+stack: ["Monitoring", "Webhooks", "Structured logging"]
+---
+
+You cannot win a distributed race. You can only degrade well.
+
+A voice agent booking an appointment is a distributed system with a human in the
+loop and a two-minute deadline. Every component in it — the telephony provider,
+the model, the calendar, the CRM — can be slow, can be down, and can succeed
+without telling you. The design question is never "how do we stop this
+happening". It is "when this happens, what does the caller experience".
+
+The homepage sorts the individual failures into what is prevented, handled and
+escalated. This page is about the four mechanisms underneath that sorting.
+
+## Idempotency on writes
+
+Every write that creates something carries a deterministic key derived from the
+content of the request — the person, the slot, the party — rather than a random
+one. Retry the same booking and you get the same booking back, not a second one.
+
+This is what makes retries safe to have at all. Without it, every timeout
+becomes a judgement call: did that land? With it, the answer is to try again and
+let the key decide.
+
+## Retry on reads, never blindly on writes
+
+Reads are safe to repeat, so a transient failure on an availability check is
+retried once before it is believed. Writes are only retried because the key
+makes them safe. The distinction is the entire discipline: an unkeyed write
+retried under uncertainty is how one caller ends up with three appointments.
+
+## Facts come from tools
+
+The model never answers from its own context. Availability, price, address,
+whether a booking exists — all of it is read at the moment it is spoken, through
+the tool bus.
+
+The tradeoff is real and it is paid in latency: a grounded answer costs a round
+trip inside a turn the caller is waiting through, which is why the
+[timezone resolver](/systems/scheduling-timezone) is built to a millisecond
+budget. What it buys is that the class of failure where the system is confidently
+wrong does not exist. Being slow is recoverable; being wrong on a phone call is
+not.
+
+Tools return structured results rather than raising. A failed tool hands back an
+error the agent can say something sensible about, instead of an exception the
+turn dies inside.
+
+## No silent failures
+
+Every workflow error raises a notification. Every provider outage creates a task
+against a human. The rule is that the team finds out from the system, and never
+from the client.
+
+This is less about detection than about ownership. An alert nobody is assigned
+to is a log line with ambition. A task in the queue somebody works through is a
+failure that ends.
+
+> Degrading well is not the same as failing gracefully. Graceful failure is
+> about the message. Degrading well is about what is still true afterwards.
+
+## Bounds as a safety net
+
+A tool loop has a hop ceiling, so a model that decides to keep calling tools
+gives up and hands over to a person instead of holding a caller on the line.
+Sessions have caps. Anything unbounded is a component that will eventually be
+found unbounded by a caller.

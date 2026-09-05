@@ -1,0 +1,69 @@
+---
+title: Scheduling & Timezone Engine
+kicker: Books correctly anywhere on earth
+summary: A resolution tool feeding the booking layer, so appointments land in the right zone worldwide — and nobody is ever called at 2am.
+metric: ~250ms average resolution
+order: 20
+stack: ["Custom tool", "GHL calendars"]
+---
+
+Most voice builds handle one country and quietly break past it. They break in a
+particular way, too: not with an error, but with a booking that is confidently
+wrong by some whole number of hours, discovered by a person who did not turn up.
+
+The bug is almost never arithmetic. It is that the system has one clock and
+needs two.
+
+## Two clocks, not one
+
+A booking involves at least two parties who are entitled to see the same
+appointment in their own local time, and a business whose availability is
+defined in a third. Storing "3pm" is the mistake; 3pm is a rendering, not a
+fact. The fact is an instant, and every surface renders it against whichever
+zone that surface belongs to.
+
+So the engine resolves, once per lead, into an IANA zone — `America/Chicago`,
+not "CST", because the abbreviation does not survive daylight saving and the
+zone does. Everything downstream reads the resolved zone rather than guessing
+again.
+
+## Why it is a tool, not a lookup
+
+Resolution runs as a tool the [voice agent](/systems/voice-agents) calls inside
+a live turn, which puts it inside the latency budget somebody is listening
+through. It is built to about 250 milliseconds average for that reason alone. A
+generous, thorough, 900ms resolver would be a correct component and a bad one:
+the caller hears the difference.
+
+It feeds two consumers:
+
+- **The booking layer**, so the slot written to the calendar is the instant both
+  parties meant.
+- **The send gate**, so calls and [messages](/systems/messaging-automation) only
+  fire inside the *lead's* local business hours. Not the client's. This is the
+  half people skip, and it is the half that wakes somebody up.
+
+> A calendar that is right and a dialler that is wrong still rings a stranger's
+> phone at two in the morning.
+
+## Tradeoffs
+
+**Resolve early, not per-use.** One resolution at the edge, stored on the
+record, read everywhere after. Resolving repeatedly is more "correct" in a
+narrow sense and gives every consumer a chance to disagree with the others.
+
+**Prefer explicit over inferred.** Where the form or the number gives the zone
+directly, that wins. Inference is a fallback, and a fallback that is wrong is
+worse than one that asks.
+
+**Accept the ambiguous cases.** Some numbers do not identify a zone. The design
+answer is to ask on the call — a caller is happy to say where they are; they are
+not happy to be called at dawn.
+
+## Failure modes
+
+Daylight saving transitions, which is why zones are stored rather than offsets.
+Half-hour and forty-five-minute offsets, which break code that assumes integer
+hours. A lead whose phone number and physical location disagree, which is
+common and is why the resolved zone is a record on the contact rather than a
+property of the number.
