@@ -1,7 +1,7 @@
 ---
 title: Signl — artist pages for a music network
 kicker: The architecture generalises
-summary: A fan-to-artist platform built on the same CRM spine as the clinic funnel — lead capture, automated nurture, six third-party APIs, and jurisdiction-aware consent from one implementation.
+summary: A fan-to-artist platform on the same CRM spine as the clinic funnel — lead capture, automated nurture, six third-party APIs, and jurisdiction-aware consent from one implementation.
 metric: GDPR + California, no per-market fork
 order: 20
 year: "2026"
@@ -9,52 +9,42 @@ role: Engineer
 stack: ["Next.js", "Supabase", "GoHighLevel", "Shopify", "YouTube API"]
 ---
 
-<Open slug="clearance to publish">
-This page names the product and links its public deployment, and stops there.
-The commissioning network is not named and will not be until it has said yes in
-writing.
-</Open>
+{/* Clearance: the commissioning network is not named here and must not be
+    until they have agreed in writing. Confirm before this page ships. */}
 
 Signl is a fan-to-artist platform: artist pages, a merch path, and a way for an
-artist to know who their audience actually is. It is on this site for one
-reason, and it is not the music. It is that the thing underneath it is the same
-machine as the clinic funnel, pointed at a completely different industry — and
-that is the claim a portfolio of one vertical cannot make.
+artist to know who their audience actually is. It is here for one reason, and it
+is not the music. The machine underneath it is the same one running the clinic
+funnel, pointed at a different industry.
 
-Front end is Next.js with Supabase. The interesting part is what is behind it.
+Front end is Next.js with Supabase. The interesting part is behind it.
 
 ## The same spine
 
-GoHighLevel is not a bolt-on here; it is the spine. Artist pages are built in
-the GHL builder. Merch runs through a GHL modal sitting over Shopify, so the
-commerce is Shopify's problem and the customer is GHL's. Thank-yous, customer
-capture, abandoned carts and segmentation are all handled there rather than
-reimplemented in the app.
+GoHighLevel is not a bolt-on here, it is the spine. Artist pages are built in the
+GHL builder. Merch runs through a GHL modal over Shopify, so the commerce is
+Shopify's problem and the customer is GHL's. Thank-yous, customer capture,
+abandoned carts and segmentation all live there rather than being reimplemented
+in the app.
 
-The Fan Connect module is a lead-capture pipeline wearing different clothes. A
-fan signing up to hear from an artist and a lead asking about a clinic are the
-same event: capture, validate, tag, segment, and then message the person on a
-schedule that respects who they are and where they are. Six third-party APIs are
-orchestrated behind it.
+The Fan Connect module is a lead-capture pipeline in different clothes. A fan
+signing up to hear from an artist and a lead asking about a clinic are the same
+event: capture, validate, tag, segment, then message on a schedule that respects
+where the person is. Six third-party APIs sit behind it.
 
 ## The part that generalises
 
 Consent is where this earns its place next to the timezone work.
 
-Signl has to satisfy GDPR and California privacy rules from a single
-implementation. The naive build forks: a European code path, a Californian one,
-and a default. That fork is a maintenance liability — every subsequent feature
-has to be written three times and will eventually be written correctly twice.
+Signl has to satisfy GDPR and California privacy rules from one implementation.
+The naive build forks — a European path, a Californian one, a default — and every
+later feature has to be written three times, then gets written correctly twice.
 
-The approach is the same one the [scheduling
-engine](/systems/scheduling-timezone) uses on time. Resolve the visitor's
-jurisdiction once, at the edge of the system, into a small set of facts about
-what is permitted. Then let one code path read those facts. It is the same
-shape: a hard problem about *where somebody is* answered once, in one place, so
-that nothing downstream has to know it was ever hard.
+I used the same shape as the [scheduling engine](/systems/scheduling-timezone).
+Resolve the visitor's jurisdiction once, at the edge, into a small set of facts
+about what is permitted. One code path reads those facts. A hard question about
+where somebody is, answered once, so nothing downstream has to know it was hard.
 
-> Clinics, med spas, insurance — and a music network. Either the architecture
-> generalises or it does not, and this is the evidence that it does.
+> Clinics, med spas, insurance — and a music network.
 
-The public deployment is at
-[signl-sigma.vercel.app](https://signl-sigma.vercel.app).
+Live at [signl-sigma.vercel.app](https://signl-sigma.vercel.app).

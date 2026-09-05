@@ -14,7 +14,7 @@
    well inside it and degrades politely instead of erroring. A shared store
    (Upstash's free Redis tier, say) is the upgrade if the site ever needs one. */
 
-export const MAX_TURNS_PER_SESSION = 14;
+export const MAX_TURNS_PER_SESSION = 30;
 export const MAX_TOOL_HOPS = 5;
 
 const IP_WINDOW_MS = 10 * 60_000;
@@ -40,7 +40,7 @@ export function checkLimits(ip: string, turn: number): LimitVerdict {
     return {
       allowed: false,
       reason:
-        "That is as long as one demo conversation runs. Reload the page to start again, or email Haider directly.",
+        "I should hand you over here — email haiderali2689832@gmail.com and I will pick it up directly.",
     };
   }
 
@@ -49,7 +49,7 @@ export function checkLimits(ip: string, turn: number): LimitVerdict {
     return {
       allowed: false,
       reason:
-        "The demo has hit its daily ceiling — it runs on a free tier with a hard cap, deliberately. Everything the agent knows is on these pages, and email reaches Haider directly.",
+        "I am not able to answer right now. Everything I know is on these pages, and email reaches me directly at haiderali2689832@gmail.com.",
     };
   }
 
@@ -57,7 +57,7 @@ export function checkLimits(ip: string, turn: number): LimitVerdict {
   if (!bucket || now >= bucket.resetAt) {
     ips.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
   } else if (bucket.count >= IP_MAX) {
-    return { allowed: false, reason: "Too many requests from here in the last few minutes. Give it a moment." };
+    return { allowed: false, reason: "Give me a moment — too many questions at once." };
   } else {
     bucket.count += 1;
   }

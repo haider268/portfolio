@@ -1,6 +1,7 @@
 # haider ali — portfolio
 
-An editorial profile of an engineer. Next.js 16, two typefaces, no CSS framework.
+Next.js 16, two typefaces, no CSS framework. The homepage is an index; the
+writing lives on the pages behind it.
 
 ```bash
 npm install
@@ -12,48 +13,64 @@ npx tsc --noEmit     # must stay clean
 ## Publishing a page
 
 Drop a `.mdx` file into `content/<track>/<collection>/`. That is the whole
-procedure — the page, the homepage index entry, and the live agent's knowledge
-of it all follow with no code change.
+procedure — the page, its homepage index entry, and the agent's knowledge of it
+all follow with no code change.
 
 ```
 content/
   automation/
     case-studies/   ->  /work/<slug>
     capabilities/   ->  /systems/<slug>
-  robotics/         ->  empty on purpose; a second track ships with zero code
+  robotics/         ->  empty on purpose; a separate site, later
 ```
 
 Frontmatter is schema-checked in `lib/content.ts`. A typo fails the build naming
-the file and every problem in plain English rather than shipping a broken page.
-Required: `title`, `summary`. Optional: `kicker`, `metric`, `order` (lower sorts
-first), `draft`, `stack`, `year`, `role`.
+the file and every problem in plain English. Required: `title`, `summary`.
+Optional: `kicker`, `metric`, `order` (lower sorts first), `draft`, `stack`,
+`year`, `role`.
 
-Inside a body you can use markdown plus three components: `>` for a pull quote,
-`<Note>` for a mono side-note, and `<Open slug="...">` for material that is not
-written yet. Use the third one rather than inventing a number.
+In a body you get markdown plus `>` for a pull quote, `<Note>` for a side-note,
+and three figures: `<SystemDiagram />`, `<Trace />`, `<FailureTiers />`.
 
-## The live agent
+**Missing material goes in an MDX comment**, never on the page:
 
-`/demo` runs a working agent over the same MDX corpus that renders the site —
-one body of content, two consumers, so the two cannot drift apart.
+```mdx
+{/* Not written yet: the Deepgram before-and-after. Do not invent it. */}
+```
 
-Speech recognition and synthesis run in the browser (Web Speech API), so the
-server only moves text and there is no WebSocket, no audio upload and nothing
-metered per minute. Text input is always available: Firefox has no speech
-recognition and Safari's is unreliable.
+## Voice
+
+First person throughout. This is his own site, so nothing refers to him in the
+third person, and nothing mentions robotics, ADAS or academic background — that
+work belongs to a different site.
+
+Numbers must not be misreadable. The sixty-second ceiling is per lead, from that
+lead's own form submission; it is never phrased so it could be read as
+throughput.
+
+## The agent
+
+`/demo` runs over the same MDX corpus that renders the site — one body of
+content, two consumers, so the two cannot drift apart.
+
+Speech runs in the browser (Web Speech API), so the server only moves text.
+Text input is always available: Firefox has no speech recognition and Safari's
+is unreliable.
 
 Set one key in `.env.local` (see `.env.example`):
 
 ```
 GEMINI_API_KEY=...        # free: https://aistudio.google.com/apikey
-# or GROQ_API_KEY=...     # whichever is present is used; LLM_PROVIDER forces one
+# or GROQ_API_KEY=...     # whichever is present wins; LLM_PROVIDER forces one
 ```
 
-Without a key nothing breaks — `/api/agent` falls back to searching the corpus
-directly and says so. Guardrails live in `lib/agent/limits.ts`: session cap,
-per-IP rate limit, hard daily ceiling. They are per-process, so on a
-multi-instance host they are a brake rather than a lock; the real ceiling is the
-free-tier quota on the key.
+Without a key nothing breaks — `/api/agent` falls back to searching the corpus.
+
+`lib/agent/limits.ts` holds a session cap, a per-IP rate limit and a daily
+ceiling. They exist so one visitor cannot exhaust the free-tier quota for
+everyone else. **None of it is ever shown to a visitor**: when a limit is hit
+the agent closes the conversation politely and offers email. They are
+per-process, so on a multi-instance host they are a brake rather than a lock.
 
 ## Layout of the code
 
@@ -62,7 +79,7 @@ app/globals.css      the whole design system: tokens, then components
 lib/content.ts       the content engine — do not weaken the validation
 lib/agent/           corpus, tools, prompt, provider, guardrails
 components/          one component per idea, each commented with why
-public/resumes/      four role-targeted PDFs; sources live outside the repo
+public/portrait.jpg  cropped from ../Haider-Image.jpeg; the only image
 ```
 
 Colour is defined three times on purpose — bare `:root` for light, a guarded
@@ -70,12 +87,11 @@ Colour is defined three times on purpose — bare `:root` for light, a guarded
 both directions and no colour is ever defined only inside a media query.
 
 Every hide-then-reveal rule is scoped to `[data-js="on"]`, which the inline
-script in `app/layout.tsx` sets before first paint. If scripting is blocked
-nothing is ever left hidden. `prefers-reduced-motion` gets composed static
-fallbacks, not a blanket kill.
+script in `app/layout.tsx` sets before first paint, so blocked scripts leave
+nothing hidden. `prefers-reduced-motion` gets composed static fallbacks.
 
 ## Notes
 
-- `AGENTS.md` is generated by `next dev` and is committed on purpose. Deleting
-  it only brings it back as an uncommitted change.
+- `AGENTS.md` is generated by `next dev` and committed on purpose. Deleting it
+  only brings it back as an uncommitted change.
 - This repo has no remote by design.

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { contents, detail, search } from "./corpus";
-import { RESUMES, CONTACT } from "@/lib/resumes";
+import { CONTACT } from "@/lib/contact";
 
 /* Tool declarations in plain JSON Schema, plus the dispatch table that runs
    them. Single source of truth; the provider-specific shape is generated from
@@ -17,7 +17,7 @@ export const TOOLS = [
   {
     name: "search_experience",
     description:
-      "Search Haider's case studies and capability write-ups. Use this for any question about what he has built, how something works, tradeoffs, or failure modes. Always search before answering.",
+      "Search the case studies and capability write-ups. Use this for any question about what was built, how something works, tradeoffs, or failure modes. Always search before answering.",
     parameters: {
       type: "object",
       properties: {
@@ -39,21 +39,6 @@ export const TOOLS = [
     },
   },
   {
-    name: "get_resume_section",
-    description:
-      "List the résumé versions, or get the one aimed at a particular kind of role.",
-    parameters: {
-      type: "object",
-      properties: {
-        role: {
-          type: "string",
-          description:
-            "the kind of role being hired for, e.g. voice ai, automation, applied ai, robotics. Omit to list all four.",
-        },
-      },
-    },
-  },
-  {
     name: "book_meeting",
     description:
       "Record a request to talk. ONLY call after the visitor has confirmed the details back to you in a later turn.",
@@ -71,7 +56,7 @@ export const TOOLS = [
   {
     name: "contact_request",
     description:
-      "Record a message for Haider. ONLY call after the visitor has confirmed it back to you in a later turn.",
+      "Record a message for your inbox. ONLY call after the visitor has confirmed it back to you in a later turn.",
     parameters: {
       type: "object",
       properties: {
@@ -85,7 +70,7 @@ export const TOOLS = [
   {
     name: "request_human_handoff",
     description:
-      "Hand over to Haider directly — for anything you cannot answer, anything commercially specific, or on request.",
+      "Hand the conversation to email — for anything you cannot answer, anything commercially specific, or on request. Say you will pick it up yourself; never refer to yourself in the third person.",
     parameters: {
       type: "object",
       properties: {
@@ -154,20 +139,6 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
     return { ok: true, ...d };
   },
 
-  get_resume_section(args) {
-    const role = str(args, "role")?.toLowerCase();
-    const all = RESUMES.map((r) => ({ ...r, url: `/resumes/${r.file}` }));
-    if (!role) return { ok: true, resumes: all };
-    const wants = (needle: string) => all.find((r) => r.file.includes(needle))!;
-    const match =
-      /voice|telephony|speech|call/.test(role) ? wants("voice-ai")
-      : /robot|embedded|slam|ros|c\+\+|firmware/.test(role) ? wants("robotics")
-      : /workflow|integration|crm|zapier|n8n|make/.test(role) ? wants("automation")
-      // applied AI is the broadest of the four, so it is also the default
-      : wants("applied-ai");
-    return { ok: true, best_match: match, resumes: all };
-  },
-
   book_meeting(args) {
     const name = str(args, "name");
     const email = str(args, "email");
@@ -186,7 +157,7 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
       delivery: "not sent automatically — the visitor sends it",
       send_url: mailto(
         `Meeting request — ${name} [${ref}]`,
-        `Name: ${name}\nEmail: ${email}\nPreferred time: ${when ?? "not stated"}\nTopic: ${topic}\n\nDrafted by the agent on Haider's site. Reference ${ref}.`
+        `Name: ${name}\nEmail: ${email}\nPreferred time: ${when ?? "not stated"}\nTopic: ${topic}\n\nDrafted by the site agent. Reference ${ref}.`
       ),
       say: "Tell them the request is drafted, give them the reference, and tell them to press Send on the draft — nothing is sent until they do.",
     };
@@ -205,7 +176,7 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
       delivery: "not sent automatically — the visitor sends it",
       send_url: mailto(
         `Message from ${name ?? "a visitor"} [${ref}]`,
-        `Name: ${name ?? "not given"}\nEmail: ${email ?? "not given"}\n\n${message}\n\nDrafted by the agent on Haider's site. Reference ${ref}.`
+        `Name: ${name ?? "not given"}\nEmail: ${email ?? "not given"}\n\n${message}\n\nDrafted by the site agent. Reference ${ref}.`
       ),
       say: "Tell them the message is drafted and they need to press Send.",
     };
@@ -221,7 +192,7 @@ const DISPATCH: Record<string, (args: Args) => ToolResult> = {
       email: CONTACT.email,
       linkedin: CONTACT.linkedin,
       send_url: mailto(`Handoff from the site agent [${ref}]`, `Reason: ${reason}\n\n${summary}\n\nReference ${ref}.`),
-      say: "Hand over warmly, give the email, and stop trying to answer the question yourself.",
+      say: "Say you will pick it up by email yourself, give the address, and stop trying to answer the question. Speak in the first person — never call yourself Haider.",
     };
   },
 };

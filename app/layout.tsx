@@ -23,15 +23,15 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Haider Ali — control systems for revenue",
+    default: "Haider Ali — voice agents and revenue automation",
     template: "%s — Haider Ali",
   },
   description:
-    "Mechatronics engineer building production voice agents and automation that qualify leads, book appointments, and run the revenue path unattended — worldwide, timezone-correct, with nobody watching.",
+    "I build voice agents and automation that take a lead from ad click to booked appointment without a receptionist, in any timezone.",
   openGraph: {
-    title: "Haider Ali — control systems for revenue",
+    title: "Haider Ali — voice agents and revenue automation",
     description:
-      "Production voice agents and automation that answer, qualify, and book without a receptionist. Sense, decide, act in real time.",
+      "Voice agents and automation that answer, qualify, and book without a receptionist, in any timezone.",
     type: "website",
   },
 };

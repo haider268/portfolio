@@ -7,8 +7,8 @@ order: 30
 stack: ["GoHighLevel", "HubSpot", "Zoho", "Pipedrive", "n8n", "Make"]
 ---
 
-Validation before the dial is the cheapest reliability win in the whole system,
-and it is cheap because of where it sits rather than what it does.
+Validation before the dial is the cheapest reliability win in the system, and it
+is cheap because of where it sits rather than what it does.
 
 A lead form will hand you a phone number with a letter in it, a country code
 that is not one, or a required field that the user skipped because the form let
@@ -17,7 +17,7 @@ retry, a queue slot and a log line finding out what a regular expression could
 have told it for free. Worse, it produces a contact in the CRM that looks
 contactable and is not, which someone will later work through by hand.
 
-So the gate sits in middleware, between the webhook and anything that dials.
+So I put the gate in middleware, between the webhook and anything that dials.
 
 ## The shape
 
@@ -34,10 +34,9 @@ stage, then emit — and only the emit triggers outbound work.
   [messaging](/systems/messaging-automation) tracks both hang off the same
   event, so they cannot disagree about whether a lead exists.
 
-Which CRM it is matters less than it appears. GoHighLevel is the common one;
-HubSpot, Zoho and Pipedrive have the same primitives with different names, and
-n8n or Make sit in the middle where a platform's native automation runs out of
-expressiveness.
+Which CRM matters less than it appears. GoHighLevel is the common one. HubSpot,
+Zoho and Pipedrive have the same primitives under different names, and n8n or
+Make sit in the middle where native automation runs out of expressiveness.
 
 ## Tradeoffs
 

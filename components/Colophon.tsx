@@ -12,9 +12,8 @@ export default function Colophon() {
           linkedin.com/in/haiderali514
         </a>
       </p>
-      {/* TODO(haider): domain is parked. When it is chosen this line, the
-          metadataBase in app/layout.tsx, and nothing else, need to change. */}
-      <p className="colophon__todo">To come — a domain</p>
+      {/* Domain is parked. When it is chosen, this file and the metadataBase
+          in app/layout.tsx are the only two places that change. */}
     </footer>
   );
 }

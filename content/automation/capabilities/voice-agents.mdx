@@ -7,75 +7,62 @@ order: 10
 stack: ["VAPI", "Retell", "Deepgram", "Twilio", "SIP"]
 ---
 
-Turn latency is the whole game. A caller does not experience an agent as
-accurate or inaccurate; they experience it as fast or awkward. Past roughly a
-second and a half of silence they assume the line dropped or that it is their
-turn, and they start talking. Once they talk over the agent the conversation
-stops being a conversation and becomes two systems interrupting each other.
+{/* Not written yet, and not to be invented:
+    - Deepgram tuning: which settings changed on a live deployment, and the
+      before-and-after on the latency/accuracy tradeoff.
+    - SIP failover: the routing rules, the timing, and what happens to a call
+      caught mid-transfer. Worth a diagram. */}
 
-So the working budget is one to one and a half seconds, end of caller speech to
-first audio back. Everything below is downstream of defending it.
+Turn latency is the whole game. A caller does not experience an agent as accurate
+or inaccurate. They experience it as fast or awkward. Past about a second and a
+half of silence they assume the line dropped, and they start talking.
+
+So the budget is one to one and a half seconds, end of caller speech to first
+audio back. Everything below is about defending it.
 
 ## Where the budget goes
 
-The loop is speech-to-text, then a model turn that may call tools, then
-text-to-speech, over a telephony leg. Each stage spends some of the budget, and
-the two that are easiest to overspend are the ones nobody watches:
+Speech to text, a model turn that may call tools, then text to speech, over a
+telephony leg. The two easiest to overspend are the ones nobody watches.
 
-- **Endpointing.** Deciding the caller has finished. Set it eagerly and the
-  agent talks over people mid-sentence; set it lazily and every single turn
-  inherits the delay. This is a per-deployment setting, not a default.
-- **Tool round-trips.** A tool call inside a turn spends real time. The
-  [timezone resolver](/systems/scheduling-timezone) is built to about 250ms for
-  exactly this reason — it runs inside a turn the caller is waiting through.
+**Endpointing** — deciding the caller has finished. Set it eagerly and the agent
+talks over people mid-sentence. Set it lazily and every turn inherits the delay.
+Per deployment, not a default.
 
-Streaming is what makes the rest survivable. Speech synthesis starts on the
-first complete sentence rather than the finished reply, so the caller hears the
-beginning of an answer while the end of it is still being generated.
+**Tool round-trips** — a tool call inside a turn spends real time. The
+[timezone resolver](/systems/scheduling-timezone) is built to about 250ms for
+exactly this reason.
+
+Streaming makes the rest survivable. Synthesis starts on the first complete
+sentence rather than the finished reply, so the caller hears the beginning of an
+answer while the end is still being generated.
 
 ## What the agent owns
 
-Conversation flow, turn-taking, interruption handling, and knowing when to
-stop. Barge-in has to actually cancel synthesis rather than queue behind it.
-Voicemail has to be recognised, both from the platform's own detection and from
-the shape of the greeting, because a recorded greeting is designed to sound
-like a person answering.
+Conversation flow, turn-taking, interruption handling, and knowing when to stop.
+Barge-in has to cancel synthesis rather than queue behind it. Voicemail has to be
+recognised — both from platform detection and from the shape of the greeting,
+because a recorded greeting is designed to sound like a person answering.
 
-Human handoff is a first-class outcome, not a failure branch. An agent that
-cannot hand over is an agent that will eventually argue with somebody.
+Human handoff is a first-class outcome. An agent that cannot hand over is an
+agent that will eventually argue with somebody.
 
-## Tradeoffs actually taken
+## Tradeoffs I took
 
-**Bigger model versus faster model.** Reasoning quality is worth very little at
-the far end of a phone line if it arrives after the caller has started talking.
-The reply is one or two sentences of spoken English; that is not where model
-capability is the constraint.
+**Faster model over bigger model.** Reasoning quality is worth little at the far
+end of a phone line if it arrives after the caller has started talking. The reply
+is one or two spoken sentences.
 
-**Confirm before writing.** Receiving a name and a phone number is not
-permission to book. Details arriving and details being confirmed are separate
-turns, always — which costs one round trip and removes an entire class of wrong
-bookings that are expensive to unwind.
+**Confirm before writing.** Receiving a name and a number is not permission to
+book. Details arriving and details being confirmed are separate turns. One extra
+round trip, and an entire class of wrong bookings disappears.
 
-**Never speak from context.** Every stated fact is a live read. This costs
-latency on some turns and removes hallucinated availability entirely. See
-[reliability engineering](/systems/reliability) for how the writes are made
-safe.
+**Never speak from context.** Every stated fact is a live read. See
+[reliability engineering](/systems/reliability).
 
 ## Failure modes it is built against
 
 Voicemail answering like a person. A caller interrupting mid-sentence. Speech
 recognition mangling a name or an email — handled by reading back word for word,
-but only where a required field would otherwise be stored wrong, because
-readback on every field turns a two-minute call into a five-minute one.
-
-<Open slug="the Deepgram tuning numbers">
-Speech-to-text settings were changed on a live deployment and the result was an
-audible improvement in the latency-versus-accuracy tradeoff. Which settings, and
-what moved, belongs here as a before-and-after — not as an adjective.
-</Open>
-
-<Open slug="SIP failover detail">
-The telephony path rings a desk and fails over to the agent. The routing rules,
-the timing, and what happens to a call caught mid-transfer are worth a diagram
-and are not written up yet.
-</Open>
+but only where a required field would otherwise be stored wrong. Readback on
+every field turns a two-minute call into a five-minute one.

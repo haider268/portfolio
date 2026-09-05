@@ -208,10 +208,7 @@ export default function SystemDiagram() {
       </svg>
 
       <figcaption>
-        Two things this drawing says faster than a paragraph. Validation sits{" "}
-        <em>before</em> the dial, so a malformed record costs nothing instead of
-        burning a call. And the agent hangs off a tool bus, so an answer about a
-        time, a price or a free slot is a live read — never a recollection.
+        Validation before the dial. Every fact from a live read.
       </figcaption>
     </figure>
   );

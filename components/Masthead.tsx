@@ -1,14 +1,13 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
-/* Five, not seven. Capabilities and résumés are reachable from the sections
-   that introduce them; putting every destination up here costs the reader a
-   decision on arrival and buys nothing. */
+/* Five. Every destination up here costs the reader a decision on arrival, so
+   anything reachable from the page below it does not belong in the nav. */
 const NAV = [
   { href: "/#system", label: "The system" },
   { href: "/#work", label: "Work" },
-  { href: "/#reliability", label: "Reliability" },
-  { href: "/demo", label: "Live agent" },
+  { href: "/systems/reliability", label: "Reliability" },
+  { href: "/demo", label: "Agent" },
   { href: "/#contact", label: "Contact" },
 ];
 

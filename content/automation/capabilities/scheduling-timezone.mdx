@@ -7,12 +7,11 @@ order: 20
 stack: ["Custom tool", "GHL calendars"]
 ---
 
-Most voice builds handle one country and quietly break past it. They break in a
-particular way, too: not with an error, but with a booking that is confidently
-wrong by some whole number of hours, discovered by a person who did not turn up.
+Most voice builds handle one country and quietly break past it — not with an
+error, but with a booking that is wrong by some whole number of hours, found by
+a person who did not turn up.
 
-The bug is almost never arithmetic. It is that the system has one clock and
-needs two.
+The bug is almost never arithmetic. The system has one clock and needs two.
 
 ## Two clocks, not one
 
@@ -22,18 +21,16 @@ defined in a third. Storing "3pm" is the mistake; 3pm is a rendering, not a
 fact. The fact is an instant, and every surface renders it against whichever
 zone that surface belongs to.
 
-So the engine resolves, once per lead, into an IANA zone — `America/Chicago`,
-not "CST", because the abbreviation does not survive daylight saving and the
-zone does. Everything downstream reads the resolved zone rather than guessing
-again.
+So I resolve once per lead into an IANA zone — `America/Chicago`, not "CST",
+because the abbreviation does not survive daylight saving and the zone does.
+Everything downstream reads the resolved zone rather than guessing again.
 
 ## Why it is a tool, not a lookup
 
 Resolution runs as a tool the [voice agent](/systems/voice-agents) calls inside
-a live turn, which puts it inside the latency budget somebody is listening
-through. It is built to about 250 milliseconds average for that reason alone. A
-generous, thorough, 900ms resolver would be a correct component and a bad one:
-the caller hears the difference.
+a live turn, which puts it inside a latency budget somebody is listening
+through. I built it to about 250 milliseconds average for that reason. A
+thorough 900ms resolver would be correct and bad: the caller hears it.
 
 It feeds two consumers:
 
@@ -56,9 +53,8 @@ narrow sense and gives every consumer a chance to disagree with the others.
 directly, that wins. Inference is a fallback, and a fallback that is wrong is
 worse than one that asks.
 
-**Accept the ambiguous cases.** Some numbers do not identify a zone. The design
-answer is to ask on the call — a caller is happy to say where they are; they are
-not happy to be called at dawn.
+**Ask when it is ambiguous.** Some numbers do not identify a zone. A caller is
+happy to say where they are. They are not happy to be called at dawn.
 
 ## Failure modes
 

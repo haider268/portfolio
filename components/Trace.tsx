@@ -4,25 +4,25 @@ import { useEffect, useRef, useState } from "react";
 
 /* One lead, from form submit to confirmation SMS.
 
-   The point of the section is TIME, so the section is paced by time. A single
-   rAF loop drives one clock; the clock reveals each row when it passes that
-   row's real timestamp, and the same clock draws the rail beside them. The
-   38-second wait before the dial is therefore visible as a wait — the page
-   spends real seconds on it while the counter spins, then everything after
-   the pickup lands quickly. Nothing here is decorative easing; it is the
-   actual event spacing, compressed by a constant factor.
+   The subject is time, so the thing is paced by time. A single rAF loop drives
+   one clock; the clock reveals each row as it passes that row's timestamp and
+   draws the rail beside them. The wait before the dial is therefore a wait you
+   sit through. Reduced motion gets the finished state. */
 
-   Reduced motion gets the finished state: every row present, rail full, clock
-   parked on the final timestamp. */
+type Row = { t: string; event: string; meta: string };
 
-export type TraceRow = {
-  /** mm:ss.s */
-  t: string;
-  event: string;
-  meta: string;
-};
+const ROWS: Row[] = [
+  { t: "00:00.0", event: "form submitted", meta: "Meta lead ad · paid social" },
+  { t: "00:02.1", event: "contact created", meta: "CRM · tagged · pipeline stage set" },
+  { t: "00:03.4", event: "validation passed", meta: "phone + required fields present" },
+  { t: "00:41.7", event: "outbound call placed", meta: "inside the 60-second ceiling" },
+  { t: "01:12.9", event: "timezone resolved", meta: "tool call · IANA zone from number + form" },
+  { t: "01:28.3", event: "availability checked", meta: "tool call · live calendar read" },
+  { t: "02:04.6", event: "appointment booked", meta: "slot held · conflict-checked" },
+  { t: "02:05.1", event: "SMS sent", meta: "confirmation · address · cancel link" },
+];
 
-/** the whole 2m05s trace, replayed in this many ms */
+/** the whole 2m05s replayed in this many ms */
 const REPLAY_MS = 5000;
 
 function seconds(t: string): number {
@@ -36,10 +36,10 @@ function clock(total: number): string {
   return `${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
 }
 
-export default function Trace({ rows }: { rows: TraceRow[] }) {
+export default function Trace() {
   const ref = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState<number | null>(null);
-  const span = seconds(rows[rows.length - 1].t);
+  const span = seconds(ROWS[ROWS.length - 1].t);
 
   useEffect(() => {
     const el = ref.current;
@@ -75,8 +75,7 @@ export default function Trace({ rows }: { rows: TraceRow[] }) {
     };
   }, [span]);
 
-  // before the replay starts, render the finished state on the server and for
-  // anyone whose script never runs
+  // the finished state is what renders on the server and without scripting
   const now = elapsed ?? span;
   const progress = Math.min(now / span, 1);
 
@@ -93,7 +92,7 @@ export default function Trace({ rows }: { rows: TraceRow[] }) {
           style={{ "--p": progress } as React.CSSProperties}
           aria-hidden="true"
         />
-        {rows.map((r) => {
+        {ROWS.map((r) => {
           const passed = now >= seconds(r.t) - 0.001;
           return (
             <li key={r.t + r.event} className="trace__row" data-passed={passed ? "" : undefined}>

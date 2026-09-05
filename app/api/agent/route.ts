@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
         // ran out of hops: hand over rather than keep a visitor waiting
         finish(
-          "I am going round in circles on that one. Email haiderali2689832@gmail.com and Haider will answer it directly."
+          "I am going round in circles on that one. Email haiderali2689832@gmail.com and I will answer it directly."
         );
       } catch (e) {
         if (req.signal.aborted) {
@@ -144,13 +144,11 @@ function groundedFallback(
 
   if (hits.length === 0) {
     finish(
-      "The live model is not running here, so I am searching the site directly — and nothing on it matches that. Email haiderali2689832@gmail.com and Haider will answer it himself."
+      "I could not find anything on that. Email haiderali2689832@gmail.com and I will answer it directly."
     );
     return;
   }
 
   const lead = hits[0]!;
-  finish(
-    `The live model is not running here, so this is a direct search of the site. The closest page is ${lead.title}. ${lead.summary}`
-  );
+  finish(`The closest thing I have written on that is ${lead.title}. ${lead.summary}`);
 }

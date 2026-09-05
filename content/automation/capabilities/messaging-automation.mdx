@@ -7,15 +7,13 @@ order: 40
 stack: ["GHL", "Twilio", "Email"]
 ---
 
-Every send honours the lead's timezone, not the client's. That sentence is the
-whole capability, and it is one line of intent standing on top of a gate that
-has to be in front of every outbound path rather than in front of most of them.
+Every send honours the lead's timezone, not the client's. That is the whole
+capability, and it rests on a gate that has to sit in front of every outbound
+path rather than most of them.
 
-Messaging runs in parallel with the [voice track](/systems/voice-agents), off
-the same pipeline event, because the two do different jobs. The call is the
-attempt to convert now. The messages are what happens when the call did not
-connect, or connected and did not close — a schedule the lead can respond to on
-their own time.
+Messaging runs in parallel with the [voice track](/systems/voice-agents), off the
+same pipeline event. The call is the attempt to convert now. The messages are
+what happens when the call did not connect, or connected and did not close.
 
 ## The gate
 
@@ -31,12 +29,12 @@ wave that moves west, which looks wrong on a dashboard and is right on a phone.
   gate. The lead is on the phone; that is definitionally an acceptable moment.
 - Scheduled nurture does not. It waits.
 
-## Compliance as a mechanism
+## Compliance
 
-STOP flips do-not-disturb automatically, and CRM-level enforcement sits behind
-it. Two mechanisms rather than one, because compliance failures are not the kind
-you find out about gently, and because the platform-level flag and the
-account-level flag fail in different ways.
+STOP flips do-not-disturb automatically, with CRM-level enforcement behind it.
+Two mechanisms rather than one: the platform flag and the account flag fail in
+different ways, and compliance failures are not the kind you find out about
+gently.
 
 Opt-out is honoured across the channel, not the campaign. A person who stops one
 sequence has not asked to be moved to another one.
