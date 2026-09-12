@@ -1,7 +1,9 @@
 # haider ali — portfolio
 
-Next.js 16, two typefaces, no CSS framework. The homepage is an index; the
-writing lives on the pages behind it.
+Next.js 16, no CSS framework. The homepage is a stage: a WebGL system core
+(Three.js / React Three Fiber) whose state follows the live agent's real
+SSE events, over crisp HTML sections. The writing lives on the pages behind
+it.
 
 ```bash
 npm install
@@ -119,21 +121,26 @@ per-process, so on a multi-instance host they are a brake rather than a lock.
 ## Layout of the code
 
 ```
-app/globals.css      the whole design system: tokens, then components
-lib/content.ts       the content engine — do not weaken the validation
-lib/agent/           corpus, tools, prompt, provider, voice, calendar, limits
-scripts/             one-time Google refresh-token helper
-components/          one component per idea, each commented with why
-public/portrait.jpg  cropped from ../Haider-Image.jpeg; the only image
+app/globals.css        the whole design system: tokens, then components
+lib/content.ts         the content engine — do not weaken the validation
+lib/state.ts           one zustand store: agent phase, tool events, pulses
+lib/agent/             corpus, tools, prompt, provider, voice, calendar, limits
+components/three/      the core scene — points, struts, tool wavefront
+components/agent/      the console and its transport hook
+components/Stage.tsx   scene + intro + console; WebGL and motion fallbacks
+scripts/               Google token helper; Playwright screenshot scripts
+public/portrait.jpg    cropped from ../Haider-Image.jpeg; the only image
 ```
 
-Colour is defined three times on purpose — bare `:root` for light, a guarded
-`prefers-color-scheme` block, and `[data-theme="dark"]` — so the toggle wins in
-both directions and no colour is ever defined only inside a media query.
+The design is one committed dark environment (`color-scheme: dark`); there is
+no theme toggle. The 3D layer is loaded dynamically and only where it can run:
+no WebGL or `prefers-reduced-motion` gets a static emblem of the same core,
+never an apology. The console, the scene, and the status rail all subscribe to
+`lib/state.ts`, and only real backend events write to it — a tool call on the
+server is the only thing that fires the wavefront.
 
-Every hide-then-reveal rule is scoped to `[data-js="on"]`, which the inline
-script in `app/layout.tsx` sets before first paint, so blocked scripts leave
-nothing hidden. `prefers-reduced-motion` gets composed static fallbacks.
+Server-rendered HTML carries everything that matters; scroll reveals are CSS
+view timelines, so blocked scripts leave nothing hidden.
 
 ## Notes
 

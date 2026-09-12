@@ -1,214 +1,140 @@
-/* The mechanism, not the interface.
+/* The flagship path, alive.
 
-   Two claims here that prose cannot make as quickly: validation sits BEFORE
-   the dial, so a malformed record is dropped instead of burned on a failed
-   call; and the agent hangs off a tool bus, so every fact it states came from
-   a live read rather than its own context window.
+   The same two claims the prose cannot make as fast: validation sits BEFORE
+   the dial, and the agent hangs off a tool bus so every fact it states is a
+   live read. Here they are watched rather than read — lead marks travel the
+   wire, one is dropped at validation and never reaches a dial, one books.
 
-   Both drawings carry the same information. The wide one runs left to right
-   because a pipeline reads that way; below 760px it would either overflow the
-   page or shrink its labels to nothing, so the narrow one runs top to bottom
-   instead. Only one is ever rendered. The accessible description lives on the
-   <figure>, so the swap does not duplicate or drop it for screen readers.
-
-   Every stroke carries pathLength="1", which normalises dash maths to a single
-   unit regardless of the real geometry — that is what lets one CSS rule trace
-   every line in the figure as the signal reaches it. */
+   Motion is SMIL <animateMotion>: no script, no dependency, and CSS hides
+   the moving marks entirely under prefers-reduced-motion, leaving the full
+   drawn system. Numbers are the real ones from the profile: the 60-second
+   ceiling per lead, timezone resolution ~250ms. */
 
 const DESCRIPTION =
-  "Pipeline diagram. A Meta lead form feeds the CRM, which tags the contact and sets its pipeline stage. " +
+  "Pipeline diagram. A paid-social lead form feeds the CRM, which tags the contact and sets its pipeline stage. " +
   "Middleware then validates the phone number and required fields before any dial; records that fail are dropped and never called. " +
-  "Valid records reach the voice agent within sixty seconds. The agent hangs off a tool bus of four sub-second tools — " +
-  "timezone resolution at around 250 milliseconds, live calendar availability, mid-call SMS, and team task creation — " +
-  "so it answers from live reads rather than from its own context. The booking is written back to the CRM. " +
-  "In parallel, an SMS and email nurture track runs gated to the lead's own local business hours.";
+  "Valid records reach the voice agent within sixty seconds of that lead's own submission. The agent hangs off a tool bus of " +
+  "sub-second tools — timezone resolution at around 250 milliseconds, live calendar availability, mid-call SMS, and team task " +
+  "creation — so it answers from live reads rather than from its own context. The booking is written back to the CRM. In " +
+  "parallel, an SMS and email nurture track runs gated to the lead's own local business hours.";
+
+/* one node: hairline box + label lines */
+function Node({
+  x, y, w, h, lines, sub, tone,
+}: {
+  x: number; y: number; w: number; h: number;
+  lines: string[]; sub?: string; tone?: "out" | "dim";
+}) {
+  const cx = x + w / 2;
+  const firstY = y + h / 2 - ((lines.length - 1) * 7) - (sub ? 5 : 0) + 4;
+  return (
+    <g>
+      <rect className={`pipe__box${tone ? ` pipe__box--${tone}` : ""}`} x={x} y={y} width={w} height={h} rx="2" />
+      {lines.map((l, i) => (
+        <text key={l} className={`pipe__t${tone === "out" ? " pipe__t--out" : ""}`} x={cx} y={firstY + i * 14}>
+          {l}
+        </text>
+      ))}
+      {sub && (
+        <text className="pipe__s" x={cx} y={firstY + lines.length * 14 + 1}>
+          {sub}
+        </text>
+      )}
+    </g>
+  );
+}
 
 export default function SystemDiagram() {
   return (
-    <figure className="figure dgm" role="img" aria-label={DESCRIPTION}>
-      {/* ── wide: left-to-right pipeline ─────────────────────────────── */}
-      <svg className="dgm__wide" viewBox="0 0 1000 500" aria-hidden="true" focusable="false">
-        <defs>
-          <marker id="dgm-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="currentColor" />
-          </marker>
-          <marker id="dgm-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)" />
-          </marker>
-        </defs>
+    <figure className="figure pipe" role="img" aria-label={DESCRIPTION}>
+      {/* ── wide: left to right ─────────────────────────────────────────── */}
+      <svg className="pipe__wide" viewBox="0 0 1000 430" aria-hidden="true" focusable="false">
+        {/* main wire */}
+        <path className="pipe__wire pipe__wire--main" d="M158 210 H 812" />
+        {/* nurture branch: CRM up and across */}
+        <path className="pipe__wire" d="M282 186 V 96 H 372" />
+        {/* drop branch: validate down */}
+        <path className="pipe__wire pipe__wire--drop" d="M468 234 V 318" />
+        {/* tool bus: voice agent down, spine across */}
+        <path className="pipe__wire" d="M654 234 V 300 M 560 300 H 948" />
+        <path className="pipe__wire" d="M584 300 V 330 M 700 300 V 330 M 816 300 V 330 M 924 300 V 330" />
+        {/* nurture return + write-back hint */}
+        <path className="pipe__wire" d="M736 96 H 886 V 182" />
 
-        <g style={{ "--i": 0 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="6" y="202" width="146" height="58" />
-          <text className="dgm-t" x="79" y="226">Meta lead</text>
-          <text className="dgm-t" x="79" y="242">form</text>
-        </g>
+        <Node x={38} y={182} w={120} h={56} lines={["lead form"]} sub="paid social" />
+        <Node x={222} y={182} w={120} h={56} lines={["CRM"]} sub="tag · stage" />
+        <Node x={408} y={182} w={120} h={56} lines={["validate"]} sub="phone · fields" />
+        <Node x={594} y={182} w={120} h={56} lines={["voice agent"]} sub="calls · qualifies" />
+        <Node x={812} y={178} w={150} h={64} lines={["booked"]} sub="CRM write-back" tone="out" />
 
-        <g style={{ "--i": 1 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="152" y1="231" x2="194" y2="231" markerEnd="url(#dgm-a)" />
-          <text className="dgm-s" x="173" y="192">webhook</text>
-        </g>
+        <Node x={372} y={68} w={364} h={56} lines={["SMS + email nurture"]} sub="gated to the lead's local business hours" tone="dim" />
+        <Node x={404} y={318} w={128} h={48} lines={["dropped"]} sub="never dialled" tone="dim" />
 
-        <g style={{ "--i": 2 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="200" y="202" width="146" height="58" />
-          <text className="dgm-t" x="273" y="226">CRM · tag</text>
-          <text className="dgm-t" x="273" y="242">pipeline stage</text>
-        </g>
+        {/* the tool bus */}
+        <text className="pipe__s pipe__s--left" x={560} y={290}>tool bus — every fact is a live read</text>
+        <Node x={536} y={330} w={96} h={44} lines={["timezone"]} sub="~250ms" tone="dim" />
+        <Node x={652} y={330} w={96} h={44} lines={["calendar"]} sub="live slots" tone="dim" />
+        <Node x={768} y={330} w={96} h={44} lines={["SMS"]} sub="mid-call" tone="dim" />
+        <Node x={884} y={330} w={80} h={44} lines={["task"]} sub="for the team" tone="dim" />
 
-        <g style={{ "--i": 3 } as React.CSSProperties}>
-          <path className="dgm-wire" pathLength="1" d="M273 202 L273 91 L388 91" markerEnd="url(#dgm-a)" fill="none" />
-          <rect className="dgm-box dgm-box--dashed" pathLength="1" x="394" y="64" width="340" height="54" />
-          <text className="dgm-t" x="564" y="86">SMS + email nurture</text>
-          <text className="dgm-s" x="564" y="103">gated to the lead&rsquo;s local business hours</text>
-          <line className="dgm-wire" pathLength="1" x1="346" y1="231" x2="388" y2="231" markerEnd="url(#dgm-a)" />
-          <text className="dgm-s" x="367" y="192">before dial</text>
-        </g>
+        {/* timing figures on the wire */}
+        <text className="pipe__f" x={561} y={200}>≤60s</text>
+        <text className="pipe__s" x={561} y={166}>from that lead&rsquo;s own submission</text>
 
-        <g style={{ "--i": 4 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="394" y="202" width="146" height="58" />
-          <text className="dgm-t" x="467" y="226">validate</text>
-          <text className="dgm-t" x="467" y="242">phone · fields</text>
-        </g>
-
-        <g style={{ "--i": 5 } as React.CSSProperties}>
-          <line className="dgm-wire dgm-wire--accent" pathLength="1" x1="467" y1="260" x2="467" y2="330" markerEnd="url(#dgm-b)" />
-          <rect className="dgm-box dgm-box--dashed" pathLength="1" x="394" y="336" width="146" height="48" />
-          <text className="dgm-s" x="467" y="356">dropped —</text>
-          <text className="dgm-s" x="467" y="371">never dialled</text>
-          <line className="dgm-wire" pathLength="1" x1="540" y1="231" x2="582" y2="231" markerEnd="url(#dgm-a)" />
-          <text className="dgm-f" x="561" y="222">&le;60s</text>
-        </g>
-
-        <g style={{ "--i": 6 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="588" y="202" width="146" height="58" />
-          <text className="dgm-t" x="661" y="226">voice agent</text>
-          <text className="dgm-t" x="661" y="242">VAPI / Retell</text>
-        </g>
-
-        <g style={{ "--i": 7 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="661" y1="260" x2="661" y2="304" />
-          <line className="dgm-wire" pathLength="1" x1="560" y1="304" x2="950" y2="304" />
-          <text className="dgm-s" x="830" y="294">every fact is a live read</text>
-        </g>
-
-        <g style={{ "--i": 8 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="596" y1="304" x2="596" y2="392" />
-          <line className="dgm-wire" pathLength="1" x1="708" y1="304" x2="708" y2="392" />
-          <line className="dgm-wire" pathLength="1" x1="820" y1="304" x2="820" y2="392" />
-          <line className="dgm-wire" pathLength="1" x1="923" y1="304" x2="923" y2="392" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="548" y="392" width="96" height="52" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="660" y="392" width="96" height="52" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="772" y="392" width="96" height="52" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="884" y="392" width="78" height="52" />
-          <text className="dgm-t" x="596" y="414">timezone</text>
-          <text className="dgm-f" x="596" y="430">~250ms</text>
-          <text className="dgm-t" x="708" y="414">calendar</text>
-          <text className="dgm-s" x="708" y="430">availability</text>
-          <text className="dgm-t" x="820" y="414">send SMS</text>
-          <text className="dgm-s" x="820" y="430">link · address</text>
-          <text className="dgm-t" x="923" y="414">task</text>
-          <text className="dgm-s" x="923" y="430">create</text>
-          <line className="dgm-wire" pathLength="1" x1="734" y1="231" x2="776" y2="231" markerEnd="url(#dgm-a)" />
-          <text className="dgm-s" x="755" y="192">on call</text>
-        </g>
-
-        <g style={{ "--i": 9 } as React.CSSProperties}>
-          <rect className="dgm-box dgm-box--out" pathLength="1" x="782" y="202" width="200" height="58" />
-          <text className="dgm-t dgm-t--out" x="882" y="226">booked</text>
-          <text className="dgm-t" x="882" y="242">+ CRM write-back</text>
-          <path className="dgm-wire" pathLength="1" d="M734 91 L882 91 L882 196" markerEnd="url(#dgm-a)" fill="none" />
+        {/* lead marks: real journeys, no script */}
+        <g className="pipe__marks">
+          {/* books */}
+          <circle className="pipe__lead" r="3.4">
+            <animateMotion dur="7s" repeatCount="indefinite" path="M158 210 H 812" keyPoints="0;0.18;0.24;0.46;0.52;0.78;0.86;1" keyTimes="0;0.14;0.22;0.4;0.5;0.72;0.8;1" calcMode="linear" />
+          </circle>
+          {/* dropped at validation */}
+          <circle className="pipe__lead pipe__lead--drop" r="2.8">
+            <animateMotion dur="7s" begin="3.2s" repeatCount="indefinite" path="M158 210 H 468 V 318" keyPoints="0;0.6;0.62;1" keyTimes="0;0.5;0.62;1" calcMode="linear" />
+          </circle>
+          {/* nurture track */}
+          <circle className="pipe__lead pipe__lead--soft" r="2.4">
+            <animateMotion dur="9s" begin="1.4s" repeatCount="indefinite" path="M282 186 V 96 H 736 H 886 V 182" />
+          </circle>
         </g>
       </svg>
 
-      {/* ── narrow: the same pipeline, top to bottom ──────────────────── */}
-      <svg className="dgm__narrow" viewBox="0 0 344 700" aria-hidden="true" focusable="false">
-        <defs>
-          <marker id="dgn-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="currentColor" />
-          </marker>
-          <marker id="dgn-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)" />
-          </marker>
-        </defs>
+      {/* ── narrow: the same system, top to bottom ──────────────────────── */}
+      <svg className="pipe__narrow" viewBox="0 0 360 660" aria-hidden="true" focusable="false">
+        <path className="pipe__wire pipe__wire--main" d="M104 64 V 588" />
+        <path className="pipe__wire" d="M104 130 H 232" />
+        <path className="pipe__wire pipe__wire--drop" d="M104 262 H 232" />
+        <path className="pipe__wire" d="M104 400 H 132 M104 448 H 132 M104 496 H 132 M104 544 H 132" />
 
-        <g style={{ "--i": 0 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="0" y="8" width="196" height="52" />
-          <text className="dgm-t" x="98" y="30">Meta lead form</text>
-          <text className="dgm-s" x="98" y="46">paid social</text>
-        </g>
+        <Node x={24} y={16} w={160} h={48} lines={["lead form"]} sub="paid social" />
+        <Node x={24} y={106} w={160} h={48} lines={["CRM · tag · stage"]} />
+        <Node x={24} y={196} w={160} h={48} lines={["validate"]} sub="phone · fields" />
+        <Node x={232} y={238} w={116} h={48} lines={["dropped"]} sub="never dialled" tone="dim" />
+        <Node x={232} y={106} w={116} h={48} lines={["nurture"]} sub="lead's hours" tone="dim" />
+        <Node x={24} y={306} w={160} h={48} lines={["voice agent"]} sub="calls · qualifies" />
 
-        <g style={{ "--i": 1 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="98" y1="60" x2="98" y2="82" markerEnd="url(#dgn-a)" />
-        </g>
+        <text className="pipe__s pipe__s--left" x={24} y={382}>tool bus — live reads</text>
+        <Node x={140} y={380} w={200} h={40} lines={["timezone ~250ms"]} tone="dim" />
+        <Node x={140} y={428} w={200} h={40} lines={["calendar · live slots"]} tone="dim" />
+        <Node x={140} y={476} w={200} h={40} lines={["SMS · mid-call"]} tone="dim" />
+        <Node x={140} y={524} w={200} h={40} lines={["task · for the team"]} tone="dim" />
 
-        <g style={{ "--i": 2 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="0" y="88" width="196" height="52" />
-          <text className="dgm-t" x="98" y="110">CRM · tag</text>
-          <text className="dgm-s" x="98" y="126">pipeline stage</text>
-        </g>
+        <Node x={24} y={588} w={324} h={56} lines={["booked"]} sub="CRM write-back" tone="out" />
 
-        <g style={{ "--i": 3 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="196" y1="114" x2="230" y2="114" markerEnd="url(#dgn-a)" />
-          <rect className="dgm-box dgm-box--dashed" pathLength="1" x="236" y="86" width="108" height="56" />
-          <text className="dgm-s" x="290" y="105">SMS + email</text>
-          <text className="dgm-s" x="290" y="118">nurture, gated</text>
-          <text className="dgm-s" x="290" y="131">to lead&rsquo;s hours</text>
-          <line className="dgm-wire" pathLength="1" x1="98" y1="140" x2="98" y2="162" markerEnd="url(#dgn-a)" />
-        </g>
+        <text className="pipe__f" x={140} y={288}>≤60s per lead</text>
 
-        <g style={{ "--i": 4 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="0" y="168" width="196" height="52" />
-          <text className="dgm-t" x="98" y="190">validate</text>
-          <text className="dgm-s" x="98" y="206">phone · fields</text>
-        </g>
-
-        <g style={{ "--i": 5 } as React.CSSProperties}>
-          <line className="dgm-wire dgm-wire--accent" pathLength="1" x1="196" y1="194" x2="230" y2="194" markerEnd="url(#dgn-b)" />
-          <rect className="dgm-box dgm-box--dashed" pathLength="1" x="236" y="172" width="108" height="44" />
-          <text className="dgm-s" x="290" y="190">dropped —</text>
-          <text className="dgm-s" x="290" y="204">never dialled</text>
-          <line className="dgm-wire" pathLength="1" x1="98" y1="220" x2="98" y2="278" markerEnd="url(#dgn-a)" />
-          <text className="dgm-f" x="140" y="252">&le;60s</text>
-        </g>
-
-        <g style={{ "--i": 6 } as React.CSSProperties}>
-          <rect className="dgm-box" pathLength="1" x="0" y="284" width="196" height="52" />
-          <text className="dgm-t" x="98" y="306">voice agent</text>
-          <text className="dgm-s" x="98" y="322">VAPI / Retell</text>
-        </g>
-
-        <g style={{ "--i": 7 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="98" y1="336" x2="98" y2="604" />
-          <text className="dgm-s dgm-s--left" x="0" y="352">tool bus — every fact is a live read</text>
-        </g>
-
-        <g style={{ "--i": 8 } as React.CSSProperties}>
-          <line className="dgm-wire" pathLength="1" x1="98" y1="380" x2="118" y2="380" />
-          <line className="dgm-wire" pathLength="1" x1="98" y1="428" x2="118" y2="428" />
-          <line className="dgm-wire" pathLength="1" x1="98" y1="476" x2="118" y2="476" />
-          <line className="dgm-wire" pathLength="1" x1="98" y1="524" x2="118" y2="524" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="124" y="360" width="220" height="40" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="124" y="408" width="220" height="40" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="124" y="456" width="220" height="40" />
-          <rect className="dgm-box dgm-box--quiet" pathLength="1" x="124" y="504" width="220" height="40" />
-          <text className="dgm-t dgm-t--left" x="136" y="378">timezone</text>
-          <text className="dgm-f dgm-f--left" x="136" y="392">~250ms</text>
-          <text className="dgm-t dgm-t--left" x="136" y="426">calendar</text>
-          <text className="dgm-s dgm-s--left" x="136" y="440">live availability</text>
-          <text className="dgm-t dgm-t--left" x="136" y="474">send SMS</text>
-          <text className="dgm-s dgm-s--left" x="136" y="488">address · link</text>
-          <text className="dgm-t dgm-t--left" x="136" y="522">task create</text>
-          <text className="dgm-s dgm-s--left" x="136" y="536">for the team</text>
-        </g>
-
-        <g style={{ "--i": 9 } as React.CSSProperties}>
-          <rect className="dgm-box dgm-box--out" pathLength="1" x="0" y="612" width="344" height="56" />
-          <text className="dgm-t dgm-t--out" x="172" y="636">booked</text>
-          <text className="dgm-s" x="172" y="652">+ CRM write-back</text>
+        <g className="pipe__marks">
+          <circle className="pipe__lead" r="3.2">
+            <animateMotion dur="7s" repeatCount="indefinite" path="M104 64 V 588" />
+          </circle>
+          <circle className="pipe__lead pipe__lead--drop" r="2.6">
+            <animateMotion dur="7s" begin="3.4s" repeatCount="indefinite" path="M104 64 V 262 H 232" />
+          </circle>
         </g>
       </svg>
 
       <figcaption>
-        Validation before the dial. Every fact from a live read.
+        Validation before the dial. Every fact from a live read. No human at
+        any stage.
       </figcaption>
     </figure>
   );

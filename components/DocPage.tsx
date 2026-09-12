@@ -5,9 +5,9 @@ import Masthead from "./Masthead";
 import Colophon from "./Colophon";
 import { mdxComponents } from "./mdx";
 
-/* One article layout for both collections. The margin column carries the
-   apparatus — what this is, what it is built on, where it sits in the system —
-   so the reading column stays a single clean measure of prose. */
+/* One article layout for both collections: a mono meta rail and a single
+   clean measure of prose. Crisp HTML on purpose — the contrast with the
+   spatial stage is part of the design, not a downgrade. */
 export default function DocPage({
   doc,
   dropcap = false,
@@ -24,14 +24,14 @@ export default function DocPage({
         Skip to content
       </a>
 
-      <div className="page">
-        <Masthead />
+      <Masthead />
 
+      <div className="page">
         <main id="main">
           <article className="article">
             <header className="article__head">
-              <h1 className="display article__title">{doc.title}</h1>
-              <p className="lead article__summary">{doc.summary}</p>
+              <h1 className="article__title">{doc.title}</h1>
+              <p className="article__summary">{doc.summary}</p>
             </header>
 
             <div className="spread">

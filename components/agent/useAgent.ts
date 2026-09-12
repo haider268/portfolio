@@ -1,0 +1,285 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { TOOL_VERBS, toolDetail, useSystem } from "@/lib/state";
+
+/* The agent's client half.
+
+   Speech recognition and synthesis run in the browser; the server only moves
+   text. This hook owns the transport — SSE parsing, the ordered TTS queue,
+   Web Speech — and mirrors every real event into the system store so the
+   scene and the console move together.
+
+   Ported from the previous panel implementation; the plumbing was verified
+   end to end and is kept, only the surface changed. */
+
+export type FeedItem =
+  | { kind: "you"; text: string }
+  | { kind: "agent"; text: string }
+  | { kind: "tool"; verb: string; detail?: string; ok: boolean }
+  | { kind: "draft"; href: string; reference?: string }
+  | { kind: "note"; text: string };
+
+const CLOSING = "Thanks for stopping by. Email haiderali2689832@gmail.com any time.";
+
+type Recognition = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+export function useAgent() {
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [draft, setDraft] = useState("");
+  const [streaming, setStreaming] = useState("");
+  const [sttReady, setSttReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const { phase, live, chain, setPhase, setLive, pushTool, clearChain } = useSystem();
+
+  const speechOn = useRef(false);
+  const history = useRef<{ role: "user" | "model"; text: string }[]>([]);
+  const recognition = useRef<Recognition | null>(null);
+
+  const audioQueue = useRef<Promise<void>>(Promise.resolve());
+  const fetchQueue = useRef<Promise<string | null>>(Promise.resolve(null));
+  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const useBrowserVoice = useRef(false);
+  const stopped = useRef(false);
+
+  useEffect(() => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => Recognition;
+      webkitSpeechRecognition?: new () => Recognition;
+    };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (Ctor) {
+      const r = new Ctor();
+      r.lang = "en-US";
+      r.interimResults = false;
+      r.continuous = false;
+      recognition.current = r;
+      setSttReady(true);
+    }
+    speechOn.current = "speechSynthesis" in window;
+    return () => {
+      stopped.current = true;
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const push = useCallback((item: FeedItem) => setFeed((prev) => [...prev, item]), []);
+
+  const browserSpeak = useCallback((text: string) => {
+    if (!speechOn.current) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.04;
+    u.lang = "en-US";
+    window.speechSynthesis.speak(u);
+  }, []);
+
+  const speak = useCallback(
+    (text: string) => {
+      if (useBrowserVoice.current) {
+        browserSpeak(text);
+        return;
+      }
+      /* every sentence is fetched the moment it arrives; playback stays in
+         order, so only the first sentence is a wait the visitor feels */
+      const pending = fetchQueue.current.then(async () => {
+        if (stopped.current || useBrowserVoice.current) return null;
+        try {
+          const res = await fetch("/api/speak", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          if (res.status === 503) {
+            useBrowserVoice.current = true;
+            return null;
+          }
+          if (!res.ok) throw new Error(String(res.status));
+          return URL.createObjectURL(await res.blob());
+        } catch {
+          return null;
+        }
+      });
+      fetchQueue.current = pending;
+
+      audioQueue.current = audioQueue.current.then(async () => {
+        const url = await pending;
+        if (!url) {
+          if (!stopped.current) browserSpeak(text);
+          return;
+        }
+        if (stopped.current) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        const audio = new Audio(url);
+        audioEl.current = audio;
+        await new Promise<void>((resolve) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+        URL.revokeObjectURL(url);
+      });
+    },
+    [browserSpeak]
+  );
+
+  const silence = useCallback(() => {
+    stopped.current = true;
+    audioQueue.current = Promise.resolve();
+    if (audioEl.current) {
+      audioEl.current.pause();
+      audioEl.current = null;
+    }
+    if (speechOn.current) window.speechSynthesis.cancel();
+  }, []);
+
+  const send = useCallback(
+    async (text: string) => {
+      const clean = text.trim();
+      if (!clean || busy || phase === "ended") return;
+
+      stopped.current = false;
+      setBusy(true);
+      setDraft("");
+      setStreaming("");
+      clearChain();
+      push({ kind: "you", text: clean });
+      setPhase("thinking");
+      let reply = "";
+      let capped = false;
+
+      try {
+        const res = await fetch("/api/agent", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            text: clean,
+            history: history.current,
+            tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+        });
+        if (!res.ok || !res.body) throw new Error(`request failed (${res.status})`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const frames = buffer.split("\n\n");
+          buffer = frames.pop() ?? "";
+
+          for (const frame of frames) {
+            const line = frame.split("\n").find((l) => l.startsWith("data: "));
+            if (!line) continue;
+            const ev = JSON.parse(line.slice(6));
+
+            if (ev.type === "tool") {
+              const verb = TOOL_VERBS[ev.name] ?? ev.name;
+              const detail = toolDetail(ev.name, ev.args ?? {});
+              // one real event, three surfaces: store (scene), chain, feed
+              pushTool({ name: ev.name, verb, detail, ok: ev.ok });
+              push({ kind: "tool", verb, detail, ok: ev.ok });
+              if (ev.send_url) push({ kind: "draft", href: ev.send_url, reference: ev.reference });
+            } else if (ev.type === "chunk") {
+              setPhase("speaking");
+              reply = reply ? `${reply} ${ev.text}` : ev.text;
+              setStreaming(reply);
+              speak(ev.text);
+            } else if (ev.type === "limited") {
+              capped = true;
+            }
+          }
+        }
+
+        if (reply) {
+          push({ kind: "agent", text: reply });
+          history.current = [
+            ...history.current,
+            { role: "user" as const, text: clean },
+            { role: "model" as const, text: reply },
+          ].slice(-24);
+        }
+      } catch {
+        push({
+          kind: "note",
+          text: "That did not go through. Everything I know is on these pages, and email reaches me directly.",
+        });
+      } finally {
+        setBusy(false);
+        setStreaming("");
+        setPhase(capped ? "ended" : "idle");
+      }
+    },
+    [busy, phase, push, speak, setPhase, pushTool, clearChain]
+  );
+
+  const listen = useCallback(() => {
+    const r = recognition.current;
+    if (!r || busy || phase === "ended") return;
+    setPhase("listening");
+    r.onresult = (e) => {
+      const said = e.results[0]?.[0]?.transcript ?? "";
+      if (said) void send(said);
+    };
+    r.onerror = () => setPhase("idle");
+    r.onend = () => {
+      if (useSystem.getState().phase === "listening") setPhase("idle");
+    };
+    try {
+      r.start();
+    } catch {
+      setPhase("idle");
+    }
+  }, [busy, phase, send, setPhase]);
+
+  const begin = useCallback(() => {
+    setLive(true);
+  }, [setLive]);
+
+  const end = useCallback(() => {
+    recognition.current?.stop();
+    silence();
+    history.current = [];
+    setBusy(false);
+    setPhase("ended");
+    push({ kind: "note", text: CLOSING });
+  }, [silence, setPhase, push]);
+
+  const restart = useCallback(() => {
+    history.current = [];
+    setFeed([]);
+    clearChain();
+    setPhase("idle");
+  }, [clearChain, setPhase]);
+
+  return {
+    feed,
+    draft,
+    setDraft,
+    streaming,
+    sttReady,
+    busy,
+    phase,
+    live,
+    chain,
+    begin,
+    send,
+    listen,
+    end,
+    restart,
+  };
+}
