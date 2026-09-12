@@ -664,6 +664,28 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__mic[data-listening="true"] { color: var(--iris-bright); animation: pip 1.2s ease-in-out infinite; }
 .dock__mic:disabled { opacity: .35; cursor: default; }
 
+.dock__hf {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: .5rem .2rem;
+  cursor: pointer;
+  flex: none;
+  transition: color .2s var(--ease);
+}
+.dock__hf svg { width: .95rem; height: .95rem; }
+.hf__loop { stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.dock__hf:hover { color: var(--ink-dim); }
+.dock__hf[data-on] { color: var(--iris-bright); }
+.dock__hf[data-on] svg { animation: orbit 5s linear infinite; transform-origin: center; }
+
 .dock__send {
   font-family: var(--mono);
   font-size: var(--t-micro);
@@ -1530,6 +1552,7 @@ a:hover { text-decoration-color: var(--iris); }
   .hud__hint { display: none; }
 
   .dock__word { display: none; }
+  .dock__hf span { display: none; }
   .dock__caption { font-size: .96rem; }
   .dock__veil { height: 13rem; }
   .dock__logPanel { bottom: 8.6rem; max-height: 36svh; }

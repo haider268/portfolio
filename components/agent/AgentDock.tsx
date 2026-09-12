@@ -152,6 +152,22 @@ export default function AgentDock() {
                 </svg>
               </button>
             )}
+            {a.sttReady && (
+              <button
+                type="button"
+                className="dock__hf"
+                onClick={() => a.setHandsFree(!a.handsFree)}
+                aria-pressed={a.handsFree}
+                aria-label="Hands-free conversation — the mic reopens after each reply"
+                title="Hands-free: the mic reopens after each reply"
+                data-on={a.handsFree || undefined}
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5v3h-3" className="hf__loop" />
+                </svg>
+                <span>hands-free</span>
+              </button>
+            )}
             <button className="dock__send" type="submit" disabled={a.busy || !a.draft.trim()}>
               send
             </button>

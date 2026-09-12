@@ -47,6 +47,18 @@ export function useAgent() {
   const [sttReady, setSttReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  /* HANDS-FREE.
+
+     Not an always-open mic — that is the echo loop from the failure
+     catalogue, in a browser that gives us no AEC. Instead the turn-based
+     gate from the production loop: the mic stays closed while the agent
+     is speaking and re-arms when playback drains. Two silent attempts in
+     a row and it stands down until the visitor speaks up or types —
+     hands-free, not open-mic surveillance. */
+  const [handsFree, setHandsFreeState] = useState(false);
+  const handsFreeRef = useRef(false);
+  const silentTries = useRef(0);
+
   const { phase, live, chain, setPhase, setLive, pushTool, clearChain } = useSystem();
 
   const speechOn = useRef(false);
@@ -236,6 +248,7 @@ export function useAgent() {
         setBusy(false);
         setStreaming("");
         setPhase(capped ? "ended" : "idle");
+        if (!capped) void rearmRef.current();
       }
     },
     [busy, phase, push, speak, setPhase, pushTool, clearChain]
@@ -247,11 +260,26 @@ export function useAgent() {
     setPhase("listening");
     r.onresult = (e) => {
       const said = e.results[0]?.[0]?.transcript ?? "";
-      if (said) void send(said);
+      if (said) {
+        silentTries.current = 0;
+        void send(said);
+      }
     };
     r.onerror = () => setPhase("idle");
     r.onend = () => {
-      if (useSystem.getState().phase === "listening") setPhase("idle");
+      if (useSystem.getState().phase !== "listening") return;
+      // hands-free: one quiet retry, then stand down rather than loop an
+      // open mic at someone who has stopped talking
+      if (handsFreeRef.current && silentTries.current < 1) {
+        silentTries.current += 1;
+        try {
+          r.start();
+          return;
+        } catch {
+          /* fall through to idle */
+        }
+      }
+      setPhase("idle");
     };
     try {
       r.start();
@@ -259,6 +287,50 @@ export function useAgent() {
       setPhase("idle");
     }
   }, [busy, phase, send, setPhase]);
+
+  /* wait for everything queued to actually finish playing — the server
+     voice resolves through the audio queue; the browser voice can only
+     be polled */
+  const speechDrained = useCallback(async () => {
+    await audioQueue.current;
+    if (speechOn.current) {
+      for (let i = 0; i < 200 && window.speechSynthesis.speaking; i++) {
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    }
+  }, []);
+
+  /* the hands-free re-arm: after a turn's speech drains, open the mic.
+     Called through refs so the version that runs always sees the latest
+     state, not the state of whichever turn created it. */
+  const listenRef = useRef<() => void>(() => {});
+  const rearm = useCallback(async () => {
+    if (!handsFreeRef.current || !recognition.current) return;
+    await speechDrained();
+    const s = useSystem.getState();
+    if (!handsFreeRef.current || stopped.current || s.phase !== "idle" || !s.live) return;
+    silentTries.current = 0;
+    listenRef.current();
+  }, [speechDrained]);
+  const rearmRef = useRef(rearm);
+  useEffect(() => {
+    listenRef.current = listen;
+    rearmRef.current = rearm;
+  });
+
+  const setHandsFree = useCallback(
+    (on: boolean) => {
+      handsFreeRef.current = on;
+      setHandsFreeState(on);
+      if (on) {
+        const s = useSystem.getState();
+        if (s.live && s.phase === "idle" && !busy) void rearm();
+      } else if (useSystem.getState().phase === "listening") {
+        recognition.current?.stop();
+      }
+    },
+    [busy, rearm]
+  );
 
   /* The agent speaks first. Watching `live` (rather than wiring this into
      one button) means every way of opening a session greets — the dock
@@ -271,6 +343,7 @@ export function useAgent() {
     push({ kind: "agent", text: GREETING });
     history.current = [{ role: "model", text: GREETING }];
     speak(GREETING);
+    void rearmRef.current();
   }, [live, push, speak]);
 
   const begin = useCallback(() => {
@@ -304,6 +377,8 @@ export function useAgent() {
     phase,
     live,
     chain,
+    handsFree,
+    setHandsFree,
     begin,
     send,
     listen,
