@@ -238,31 +238,64 @@ export async function book(
   }
 
   const id = eventId(email, start.toISOString());
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=all&conferenceDataVersion=0`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        id,
-        summary: `${name} — ${topic}`.slice(0, 200),
-        description: `Booked by the agent on haiderali's site.\n\nName: ${name}\nEmail: ${email}\nTopic: ${topic}`,
-        start: { dateTime: start.toISOString(), timeZone: "UTC" },
-        end: { dateTime: end.toISOString(), timeZone: "UTC" },
-        // both parties are attendees, so Google emails the invitation to
-        // the visitor AND to the host — one API call, two notifications
-        attendees: [
-          { email, displayName: name },
-          { email: HOST_EMAIL, responseStatus: "accepted" },
-        ],
-        reminders: { useDefault: true },
-      }),
-      signal,
-    }
-  );
+  /* Both parties are attendees. NOTE Google's rules, learned the hard way:
+     the account that owns the calendar is the ORGANIZER and is never
+     emailed an invitation to its own event — the host attendee entry only
+     produces an email when BOOKING_HOST_EMAIL differs from that account.
+     The dependable host notification is the calendar's own
+     "Other notifications → New events" email setting. */
+  const body = JSON.stringify({
+    id,
+    summary: `${name} — ${topic}`.slice(0, 200),
+    description: `Booked by the agent on haiderali's site.\n\nName: ${name}\nEmail: ${email}\nTopic: ${topic}`,
+    start: { dateTime: start.toISOString(), timeZone: "UTC" },
+    end: { dateTime: end.toISOString(), timeZone: "UTC" },
+    status: "confirmed",
+    attendees: [
+      { email, displayName: name },
+      { email: HOST_EMAIL },
+    ],
+    reminders: { useDefault: true },
+  });
+  const headers = { authorization: `Bearer ${token}`, "content-type": "application/json" };
+  const base = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`;
 
-  // the deterministic id already exists: the same request, submitted twice
+  const res = await fetch(`${base}?sendUpdates=all&conferenceDataVersion=0`, {
+    method: "POST",
+    headers,
+    body,
+    signal,
+  });
+
+  /* The deterministic id already exists. Two very different cases share
+     this status: the same booking submitted twice (an honest duplicate —
+     say so, change nothing), and a manually DELETED booking, which leaves
+     a cancelled event holding the id forever and would make this
+     email+slot unbookable. Only the cancelled corpse gets revived. */
   if (res.status === 409) {
+    const existing = await fetch(`${base}/${id}`, { headers, signal });
+    const state = existing.ok
+      ? ((await existing.json()) as { status?: string }).status
+      : undefined;
+
+    if (state === "cancelled") {
+      const patch = await fetch(`${base}/${id}?sendUpdates=all`, {
+        method: "PATCH",
+        headers,
+        body,
+        signal,
+      });
+      if (patch.ok) {
+        const json = (await patch.json()) as { htmlLink?: string };
+        return {
+          ok: true,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          htmlLink: json.htmlLink,
+          duplicate: false,
+        };
+      }
+    }
     return { ok: true, start: start.toISOString(), end: end.toISOString(), duplicate: true };
   }
   if (!res.ok) {
