@@ -78,7 +78,11 @@ export async function POST(req: Request) {
 
       try {
         for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
-          const result = await turn(systemPrompt(tz, path), msgs, req.signal);
+          const result = await turn(
+            systemPrompt(tz, path, history.filter((h) => h.role === "user").length),
+            msgs,
+            req.signal
+          );
 
           if (!result.calls?.length) {
             finish(result.text?.trim() || "Sorry — could you say that again?");
@@ -144,12 +148,31 @@ export async function POST(req: Request) {
 
 /** The path with no model in it: search the corpus, report what was found.
     Stiffer than a generated reply and entirely truthful, which is the right
-    way round for a fallback. */
+    way round for a fallback.
+
+    One intent it must still understand without a model: booking. A visitor
+    saying "book a call" is not asking about the corpus — the fallback opens
+    the manual booking panel, which needs no model at all. */
 function groundedFallback(
   text: string,
   send: (e: unknown) => void,
   finish: (reply: string) => void
 ) {
+  if (/\b(book|appointment|meeting|schedule|calend[ae]r|call with|talk to|speak (to|with))\b/i.test(text)) {
+    send({
+      type: "tool",
+      name: "open_page",
+      args: { target: "contact" },
+      ok: true,
+      path: "/contact",
+      ms: 0,
+    });
+    finish(
+      "I have opened the booking page for you — pick any open slot and the calendar invitation lands in both our inboxes. Prefer email? haiderali2689832@gmail.com reaches me directly."
+    );
+    return;
+  }
+
   const started = Date.now();
   const hits = search(text, 2);
   send({

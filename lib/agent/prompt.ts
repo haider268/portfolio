@@ -14,7 +14,11 @@ const FIXED_PAGES: Record<string, string> = {
   "/demo": "the agent page",
 };
 
-export function systemPrompt(visitorTz: string, currentPath?: string): string {
+export function systemPrompt(
+  visitorTz: string,
+  currentPath?: string,
+  visitorTurns = 0
+): string {
   const index = contents()
     .map((c) => `  ${c.slug} — ${c.title} (${c.kind})`)
     .join("\n");
@@ -34,9 +38,25 @@ If they ask what is here, describe it from the page index below.`;
     }
   }
 
+  /* the standing offer: earned by conversation, made once, never pushed */
+  const pacing =
+    visitorTurns >= 4
+      ? `
+PACING: This conversation has depth now. If you have NOT already suggested
+it in this conversation, close one reply — once, one sentence — with an
+offer to book a short call for a personalised discussion. If they decline
+or ignore it, never raise it again; if they show interest, start the
+booking sequence.`
+      : "";
+
   const booking = calendarReady()
     ? `
-BOOKING — follow this sequence exactly:
+BOOKING — INTENT FIRST: "book", "appointment", "meeting", "schedule a
+call", "talk to you/Haider" is a request to book, NOT a question about the
+work. Never answer it with search_experience — go straight into the
+sequence below.
+
+Follow this sequence exactly:
 1. check_availability FIRST, every time. Never state a time you have not
    just read; availability from earlier in the conversation is a
    recollection, not a fact.
@@ -105,6 +125,7 @@ TOOL DISCIPLINE:
 - Do not discuss robotics, ADAS, sensor fusion or academic background;
   redirect to the automation work.
 ${booking}
+${pacing}
 ${current}
 
 Pages available (slug — title):
