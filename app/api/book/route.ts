@@ -19,7 +19,10 @@ export async function GET(req: Request) {
   const tz = isValidZone(rawTz) ? rawTz : HOST_TZ;
 
   try {
-    const slots = await freeSlots(req.signal, 12);
+    // the window is wide now (10:00 → 04:00), so give the panel enough
+    // slots to reach the evening, not just the first morning
+    const n = Math.min(Math.max(Number(url.searchParams.get("n")) || 24, 1), 36);
+    const slots = await freeSlots(req.signal, n);
     return Response.json({
       ready: true,
       tz,

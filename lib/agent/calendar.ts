@@ -23,9 +23,17 @@ const HOST_EMAIL = process.env.BOOKING_HOST_EMAIL?.trim() || "haiderali2689832@g
 
 /** the zone the working hours below are expressed in */
 export const HOST_TZ = process.env.BOOKING_TIMEZONE?.trim() || "Asia/Karachi";
+/* The window may cross midnight: a close hour past 24 means "into the next
+   morning". The default is his real availability — 10:00 until 04:00 the
+   following day, i.e. unavailable only from 4am to 10am. */
 const OPEN_HOUR = Number(process.env.BOOKING_OPEN_HOUR ?? 10);
-const CLOSE_HOUR = Number(process.env.BOOKING_CLOSE_HOUR ?? 19);
+const CLOSE_HOUR = Number(process.env.BOOKING_CLOSE_HOUR ?? 28);
 const SLOT_MINUTES = Number(process.env.BOOKING_SLOT_MINUTES ?? 30);
+/* days the window never opens, by the day it STARTS on (Sat night running
+   into Sunday 4am still belongs to Saturday) */
+const CLOSED_DAYS = new Set(
+  (process.env.BOOKING_CLOSED_DAYS?.trim() || "Sun").split(",").map((d) => d.trim())
+);
 /** never offer something starting in the next few minutes */
 const LEAD_MINUTES = 90;
 const HORIZON_DAYS = 10;
@@ -150,7 +158,9 @@ export async function freeSlots(signal: AbortSignal, limit = 6): Promise<Slot[]>
   const token = await accessToken(signal);
   const now = new Date();
   const from = new Date(now.getTime() + LEAD_MINUTES * 60_000);
-  const to = new Date(now.getTime() + HORIZON_DAYS * 86_400_000);
+  // one extra day of busy data, because the last day's window can cross
+  // midnight into the day after the horizon
+  const to = new Date(now.getTime() + (HORIZON_DAYS + 1) * 86_400_000);
 
   const res = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST",
@@ -176,8 +186,9 @@ export async function freeSlots(signal: AbortSignal, limit = 6): Promise<Slot[]>
   for (let day = 0; day < HORIZON_DAYS && out.length < limit; day++) {
     const probe = new Date(now.getTime() + day * 86_400_000);
     const { y, m, d, weekday } = ymdIn(probe, HOST_TZ);
-    if (weekday === "Sat" || weekday === "Sun") continue;
+    if (CLOSED_DAYS.has(weekday)) continue;
 
+    // hours past 24 roll into the next calendar day via Date.UTC overflow
     for (let h = OPEN_HOUR * 60; h + SLOT_MINUTES <= CLOSE_HOUR * 60; h += SLOT_MINUTES) {
       const start = instantAt(y, m, d, Math.floor(h / 60), h % 60, HOST_TZ);
       const end = new Date(start.getTime() + SLOT_MINUTES * 60_000);

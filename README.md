@@ -102,7 +102,10 @@ Point it at a dedicated calendar, not your main one — anything reachable from 
 public page is eventually found by someone with nothing better to do.
 
 Working hours come from `BOOKING_TIMEZONE`, `BOOKING_OPEN_HOUR`,
-`BOOKING_CLOSE_HOUR` and `BOOKING_SLOT_MINUTES`; weekends are skipped.
+`BOOKING_CLOSE_HOUR` (past 24 crosses midnight — the default 10→28 is
+10:00 until 04:00 the next morning), `BOOKING_SLOT_MINUTES`, and
+`BOOKING_CLOSED_DAYS` (default `Sun`, matched by the day the window
+starts). `BOOKING_HOST_EMAIL` is where the host's copy of the invite goes.
 
 The browser sends its own IANA zone with every turn, so slots are offered on the
 visitor's clock and stored as instants. Availability is re-read at the moment of
