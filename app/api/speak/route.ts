@@ -26,8 +26,13 @@ export async function POST(req: Request) {
 
   const result = await speak(text, req.signal);
   if (!result.ok) {
-    // 503 is the browser's cue to fall back to its own voice for the session
-    return new Response(result.message, { status: result.status === 503 ? 503 : 502 });
+    /* 503 is the browser's cue to fall back to its own voice for the whole
+       session. Exhausted Cartesia credits arrive as 402/403 — that is not
+       transient, so it gets the same treatment: degrade once, cleanly,
+       instead of a doomed API round trip before every sentence. */
+    const exhausted =
+      result.status === 503 || result.status === 402 || result.status === 403;
+    return new Response(result.message, { status: exhausted ? 503 : 502 });
   }
 
   return new Response(result.audio, {

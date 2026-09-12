@@ -69,6 +69,9 @@ export function useAgent() {
   const fetchQueue = useRef<Promise<string | null>>(Promise.resolve(null));
   const audioEl = useRef<HTMLAudioElement | null>(null);
   const useBrowserVoice = useRef(false);
+  /* two consecutive failures of any kind = the voice service is not coming
+     back this session; stop paying a round trip per sentence to find out */
+  const voiceFails = useRef(0);
   const stopped = useRef(false);
 
   useEffect(() => {
@@ -123,8 +126,10 @@ export function useAgent() {
             return null;
           }
           if (!res.ok) throw new Error(String(res.status));
+          voiceFails.current = 0;
           return URL.createObjectURL(await res.blob());
         } catch {
+          if (++voiceFails.current >= 2) useBrowserVoice.current = true;
           return null;
         }
       });

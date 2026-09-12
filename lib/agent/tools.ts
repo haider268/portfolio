@@ -271,22 +271,33 @@ const DISPATCH: Record<string, Handler> = {
 
       let picked = all.slice(0, 6);
       let ranked = false;
+      let exact = false;
       const wanted = str(args, "preferred_iso");
       if (wanted) {
         const at = new Date(wanted).getTime();
         if (!Number.isNaN(at)) {
+          // matching happens HERE, not in the model's context: only the
+          // three closest open slots go back over the wire
           picked = [...all]
             .sort((a, b) => Math.abs(new Date(a.start).getTime() - at) - Math.abs(new Date(b.start).getTime() - at))
-            .slice(0, 6)
+            .slice(0, 3)
             .sort((a, b) => a.start.localeCompare(b.start));
           ranked = true;
+          exact = picked.some((s) => new Date(s.start).getTime() === at);
         }
       }
 
       return {
         ok: true,
         visitor_timezone: ctx.tz,
-        ...(ranked ? { note: "these are the open slots NEAREST the requested time" } : {}),
+        ...(ranked
+          ? {
+              requested_time_available: exact,
+              note: exact
+                ? "the requested time itself is open"
+                : "the requested time is NOT open; these are the nearest alternatives",
+            }
+          : {}),
         slots: picked.map((s) => ({
           slot_id: s.start,
           // both clocks, because that is the whole point of the scheduling work
