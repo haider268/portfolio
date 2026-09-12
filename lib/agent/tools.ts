@@ -59,6 +59,21 @@ export const TOOLS = [
     },
   },
   {
+    name: "scroll_page",
+    description:
+      "Scroll the page the visitor is looking at. Use when they ask to scroll, read on, go to the top or bottom, keep scrolling, or stop. Actions: down, up, top, bottom, auto (slow continuous reading scroll), stop.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          description: "down | up | top | bottom | auto | stop",
+        },
+      },
+      required: ["action"],
+    },
+  },
+  {
     name: "check_availability",
     description:
       "Read real open slots from the calendar. Call this before offering any time. Never invent or guess availability.",
@@ -198,6 +213,20 @@ const DISPATCH: Record<string, Handler> = {
       title: d.title,
       say: "Say in one short sentence that you have opened the page, and offer one thing worth noticing on it.",
     };
+  },
+
+  scroll_page(args) {
+    const action = str(args, "action")?.trim().toLowerCase();
+    const VALID = ["down", "up", "top", "bottom", "auto", "stop"];
+    if (!action || !VALID.includes(action)) {
+      return {
+        ok: false,
+        error_code: "INVALID_ARGUMENTS",
+        message: `action must be one of ${VALID.join(", ")}`,
+      };
+    }
+    // the browser performs the scroll when this event reaches it
+    return { ok: true, action, say: "A word or two at most — do not narrate scrolling." };
   },
 
   get_project_detail(args) {

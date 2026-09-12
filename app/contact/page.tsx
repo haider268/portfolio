@@ -5,6 +5,7 @@ import Masthead from "@/components/Masthead";
 import Colophon from "@/components/Colophon";
 import Anchor from "@/components/Anchor";
 import Reveal from "@/components/Reveal";
+import BookingPanel from "@/components/BookingPanel";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -45,6 +46,20 @@ export default function Page() {
                 <span className="contact__value">github.com/haider268</span>
               </Anchor>
             </div>
+          </section>
+
+          <section className="band" aria-labelledby="book-h">
+            <header className="band__head">
+              <span className="band__index" aria-hidden="true">◒</span>
+              <h2 className="band__title" id="book-h">Book a time</h2>
+              <p className="band__gloss">
+                the same calendar the agent books against — live availability,
+                your timezone
+              </p>
+            </header>
+            <Reveal>
+              <BookingPanel />
+            </Reveal>
           </section>
 
           <section className="band" aria-labelledby="prac-h">

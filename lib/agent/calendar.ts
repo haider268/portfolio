@@ -18,6 +18,8 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET?.trim() || "";
 const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN?.trim() || "";
 /** a calendar kept for demo bookings, so junk never touches the real one */
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID?.trim() || "";
+/** the host lands on the invite as an attendee, so he is emailed too */
+const HOST_EMAIL = process.env.BOOKING_HOST_EMAIL?.trim() || "haiderali2689832@gmail.com";
 
 /** the zone the working hours below are expressed in */
 export const HOST_TZ = process.env.BOOKING_TIMEZONE?.trim() || "Asia/Karachi";
@@ -234,7 +236,12 @@ export async function book(
         description: `Booked by the agent on haiderali's site.\n\nName: ${name}\nEmail: ${email}\nTopic: ${topic}`,
         start: { dateTime: start.toISOString(), timeZone: "UTC" },
         end: { dateTime: end.toISOString(), timeZone: "UTC" },
-        attendees: [{ email, displayName: name }],
+        // both parties are attendees, so Google emails the invitation to
+        // the visitor AND to the host — one API call, two notifications
+        attendees: [
+          { email, displayName: name },
+          { email: HOST_EMAIL, responseStatus: "accepted" },
+        ],
         reminders: { useDefault: true },
       }),
       signal,

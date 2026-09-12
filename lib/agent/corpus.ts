@@ -124,7 +124,7 @@ export function detail(slug: string) {
     metric: e.metric,
     stack: e.stack,
     role: e.role,
-    text: plain(e.body).slice(0, 2400),
+    text: plain(e.body).slice(0, 3200),
   };
 }
 

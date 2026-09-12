@@ -26,7 +26,7 @@ function sse(event: unknown): Uint8Array {
 }
 
 export async function POST(req: Request) {
-  let payload: { text?: string; history?: Turn[]; tz?: string };
+  let payload: { text?: string; history?: Turn[]; tz?: string; path?: string };
   try {
     payload = await req.json();
   } catch {
@@ -41,6 +41,11 @@ export async function POST(req: Request) {
   /* The visitor's own IANA zone, sent by the browser. Every time the agent
      quotes is rendered on their clock — which is the thing this site is about. */
   const tz = typeof payload.tz === "string" ? payload.tz.slice(0, 64) : "";
+  /* where the visitor currently is, so "summarise this page" has a referent */
+  const path =
+    typeof payload.path === "string" && /^\/[a-z0-9\-/]*$/i.test(payload.path)
+      ? payload.path.slice(0, 80)
+      : undefined;
   const verdict = checkLimits(ip, history.filter((h) => h.role === "user").length);
 
   const stream = new ReadableStream<Uint8Array>({
@@ -73,7 +78,7 @@ export async function POST(req: Request) {
 
       try {
         for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
-          const result = await turn(systemPrompt(tz), msgs, req.signal);
+          const result = await turn(systemPrompt(tz, path), msgs, req.signal);
 
           if (!result.calls?.length) {
             finish(result.text?.trim() || "Sorry — could you say that again?");

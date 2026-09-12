@@ -153,6 +153,70 @@ export function useAgent() {
     [browserSpeak]
   );
 
+  /* SCROLL CONTROL.
+
+     The agent's scroll_page events land here. "auto" is a slow reading
+     scroll on a rAF loop; any real user input — wheel, touch, arrow keys —
+     cancels it immediately, because the visitor's hand always outranks the
+     agent's. Route changes cancel it too. */
+  const autoScroll = useRef<number | null>(null);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScroll.current !== null) {
+      cancelAnimationFrame(autoScroll.current);
+      autoScroll.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const cancel = () => stopAutoScroll();
+    window.addEventListener("wheel", cancel, { passive: true });
+    window.addEventListener("touchstart", cancel, { passive: true });
+    window.addEventListener("keydown", cancel);
+    return () => {
+      stopAutoScroll();
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("keydown", cancel);
+    };
+  }, [stopAutoScroll]);
+
+  const performScroll = useCallback(
+    (action: string) => {
+      stopAutoScroll();
+      const page = () => document.documentElement;
+      switch (action) {
+        case "down":
+          window.scrollBy({ top: window.innerHeight * 0.75, behavior: "smooth" });
+          break;
+        case "up":
+          window.scrollBy({ top: -window.innerHeight * 0.75, behavior: "smooth" });
+          break;
+        case "top":
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          break;
+        case "bottom":
+          window.scrollTo({ top: page().scrollHeight, behavior: "smooth" });
+          break;
+        case "auto": {
+          const tick = () => {
+            const el = page();
+            if (el.scrollTop + window.innerHeight >= el.scrollHeight - 2) {
+              stopAutoScroll();
+              return;
+            }
+            window.scrollBy(0, 1.1);
+            autoScroll.current = requestAnimationFrame(tick);
+          };
+          autoScroll.current = requestAnimationFrame(tick);
+          break;
+        }
+        // "stop": stopAutoScroll above already did the work
+      }
+    },
+    [stopAutoScroll]
+  );
+
   const silence = useCallback(() => {
     stopped.current = true;
     audioQueue.current = Promise.resolve();
@@ -186,6 +250,8 @@ export function useAgent() {
             text: clean,
             history: history.current,
             tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            // where the visitor is right now, so "this page" means something
+            path: window.location.pathname,
           }),
         });
         if (!res.ok || !res.body) throw new Error(`request failed (${res.status})`);
@@ -217,9 +283,15 @@ export function useAgent() {
               );
               push({ kind: "tool", verb, detail, ok: ev.ok });
               if (ev.send_url) push({ kind: "draft", href: ev.send_url, reference: ev.reference });
-              // the agent drives the browser: a successful open_page event
-              // navigates the site the visitor is looking at
-              if (typeof ev.path === "string") router.push(ev.path);
+              // the agent drives the browser: navigation and scrolling are
+              // real events executed here, never animations
+              if (typeof ev.path === "string") {
+                stopAutoScroll();
+                router.push(ev.path);
+              }
+              if (ev.name === "scroll_page" && ev.ok && typeof ev.args?.action === "string") {
+                performScroll(ev.args.action);
+              }
             } else if (ev.type === "chunk") {
               setPhase("speaking");
               reply = reply ? `${reply} ${ev.text}` : ev.text;
@@ -251,7 +323,7 @@ export function useAgent() {
         if (!capped) void rearmRef.current();
       }
     },
-    [busy, phase, push, speak, setPhase, pushTool, clearChain]
+    [busy, phase, push, speak, setPhase, pushTool, clearChain, router, performScroll, stopAutoScroll]
   );
 
   const listen = useCallback(() => {

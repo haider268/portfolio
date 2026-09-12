@@ -289,7 +289,7 @@ a:hover { text-decoration-color: var(--iris); }
 .hud__hint {
   position: absolute;
   left: 50%;
-  bottom: 4.6rem;
+  bottom: 1.15rem;
   transform: translateX(-50%);
   font-family: var(--mono);
   font-size: var(--t-micro);
@@ -305,7 +305,7 @@ a:hover { text-decoration-color: var(--iris); }
 /* the inspector: what the visitor is on, and the way in */
 .hud__panel {
   position: absolute;
-  left: var(--pad);
+  right: var(--pad);
   bottom: 4.4rem;
   width: min(22rem, calc(100vw - 2 * var(--pad)));
   border-left: 1px solid var(--hair-strong);
@@ -441,8 +441,8 @@ a:hover { text-decoration-color: var(--iris); }
 
 .dock--closed {
   display: flex;
-  justify-content: center;
-  padding-bottom: 1.05rem;
+  justify-content: flex-start;
+  padding: 0 var(--pad) 1.05rem;
 }
 
 /* the summon pill: quiet, present everywhere */
@@ -486,36 +486,38 @@ a:hover { text-decoration-color: var(--iris); }
 }
 
 /* the open strip: captions over the scene, a command line beneath */
+/* the agent's corner: bottom-left, out of the content's way */
 .dock__veil {
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  height: 16rem;
-  background: linear-gradient(
-    to top,
+  height: 18rem;
+  background: radial-gradient(
+    150% 175% at 0% 100%,
     rgb(8 9 12 / 97%) 0%,
-    rgb(8 9 12 / 88%) 46%,
-    rgb(8 9 12 / 40%) 78%,
-    transparent 100%
+    rgb(8 9 12 / 88%) 38%,
+    rgb(8 9 12 / 45%) 60%,
+    transparent 78%
   );
 }
 
 .dock__inner {
   position: relative;
   pointer-events: auto;
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 0 var(--pad) 1.05rem;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0;
+  padding: 0 0 1.05rem var(--pad);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: .55rem;
-  text-align: center;
+  text-align: left;
 }
 
 .dock__chain {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: .3rem .9rem;
   min-height: 1rem;
   font-family: var(--mono);
@@ -532,7 +534,7 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__captions {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: .35rem;
   min-height: 3.4rem;
   justify-content: flex-end;
@@ -545,11 +547,11 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .dock__you::before { content: "you — "; color: var(--iris-deep); }
 .dock__caption {
-  font-size: 1.07rem;
-  line-height: 1.55;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--ink);
-  max-width: 42rem;
-  text-wrap: balance;
+  max-width: 25rem;
+  text-wrap: pretty;
   text-shadow: 0 1px 12px rgb(8 9 12 / 80%);
 }
 .dock__caption--empty { color: var(--muted); font-size: var(--t-small); }
@@ -573,7 +575,7 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__draft a { color: var(--iris); text-decoration-color: var(--iris-deep); }
 .dock__draft span { color: var(--muted); font-variant-numeric: tabular-nums; }
 
-.dock__openers { display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem; }
+.dock__openers { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .45rem; }
 .dock__openers button {
   font-family: var(--mono);
   font-size: var(--t-micro);
@@ -592,9 +594,8 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__line {
   display: flex;
   align-items: center;
-  gap: .7rem;
+  gap: .55rem;
   width: 100%;
-  max-width: 42rem;
   border-top: 1px solid var(--hair);
   padding-top: .7rem;
   margin-top: .2rem;
@@ -629,13 +630,12 @@ a:hover { text-decoration-color: var(--iris); }
   text-transform: uppercase;
   color: var(--muted);
   flex: none;
-  min-width: 7rem;
   text-align: left;
 }
 
 .dock__input {
-  flex: 1 1 8rem;
-  min-width: 0;
+  flex: 1 1 7rem;
+  min-width: 5.5rem;
   font-family: var(--sans);
   font-size: var(--t-small);
   color: var(--ink);
@@ -737,9 +737,8 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__logPanel {
   position: absolute;
   bottom: 9.4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(42rem, calc(100vw - 2 * var(--pad)));
+  left: var(--pad);
+  width: min(28rem, calc(100vw - 2 * var(--pad)));
   max-height: 42svh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1207,7 +1206,7 @@ a:hover { text-decoration-color: var(--iris); }
 .colophon {
   margin-top: clamp(5rem, 9vw, 8rem);
   border-top: 1px solid var(--hair-strong);
-  padding: 1.6rem 0 4rem;
+  padding: 1.6rem 0 6.5rem;
   display: flex;
   gap: 1.1rem 2.5rem;
   flex-wrap: wrap;
@@ -1512,6 +1511,128 @@ a:hover { text-decoration-color: var(--iris); }
   color: var(--muted);
 }
 
+/* ═══ manual booking ═══════════════════════════════════════════════════ */
+
+.booking { max-width: 46rem; }
+
+.booking__lead {
+  font-size: var(--t-small);
+  color: var(--ink-dim);
+  max-width: 52ch;
+}
+.booking__wait {
+  margin-top: 1.2rem;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .08em;
+  color: var(--muted);
+  animation: pip 1.4s ease-in-out infinite;
+}
+.booking__off {
+  font-size: var(--t-small);
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 52ch;
+}
+.booking__off a { color: var(--ink-dim); text-decoration-color: var(--iris-deep); }
+.booking__off a:hover { color: var(--iris-bright); }
+
+.booking__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin: 1.2rem 0 1.6rem;
+}
+.booking__slot {
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .03em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  padding: .55rem .75rem;
+  cursor: pointer;
+  transition: border-color .2s var(--ease), color .2s var(--ease), background .2s var(--ease);
+}
+.booking__slot:hover:not(:disabled) { border-color: var(--iris-deep); color: var(--ink); }
+.booking__slot[aria-checked="true"] {
+  border-color: var(--iris);
+  color: var(--iris-bright);
+  background: var(--iris-wash);
+}
+.booking__slot:disabled { opacity: .5; cursor: default; }
+
+.booking__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.3rem 2.5rem;
+  margin-bottom: 1.5rem;
+}
+.booking__field { display: flex; flex-direction: column; gap: .4rem; }
+.booking__field--wide { grid-column: 1 / -1; }
+.booking__field span {
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.booking__field input {
+  font-family: var(--sans);
+  font-size: var(--t-body);
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hair-strong);
+  padding: .35rem 0 .45rem;
+  transition: border-color .2s var(--ease);
+}
+.booking__field input:focus-visible { outline: none; border-bottom-color: var(--iris); }
+.booking__field input:disabled { opacity: .5; }
+
+.booking__problem {
+  margin-bottom: 1.1rem;
+  font-size: var(--t-small);
+  color: var(--end);
+}
+.booking__problem a { color: inherit; }
+
+.booking__go {
+  font-family: var(--mono);
+  font-size: var(--t-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--iris-bright);
+  background: transparent;
+  border: 1px solid var(--iris-deep);
+  border-radius: 999px;
+  padding: .7rem 1.5rem;
+  cursor: pointer;
+  transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+.booking__go:hover:not(:disabled) { background: var(--iris-wash); border-color: var(--iris); }
+.booking__go:disabled { opacity: .4; cursor: default; }
+
+.booking__done {
+  border-left: 1px solid var(--iris);
+  padding-left: 1.5rem;
+  max-width: 46ch;
+}
+.booking__doneTitle {
+  font-family: var(--display);
+  font-size: var(--t-heading);
+  color: var(--ink);
+}
+.booking__doneWhen {
+  margin: .5rem 0 .7rem;
+  font-family: var(--mono);
+  font-size: var(--t-mono);
+  color: var(--iris-bright);
+}
+.booking__doneNote { font-size: var(--t-small); color: var(--muted); line-height: 1.65; }
+.booking__doneNote a { color: var(--ink-dim); text-decoration-color: var(--iris-deep); }
+
 /* ═══ demo notes ═══════════════════════════════════════════════════════ */
 
 .demo__notes {
@@ -1553,10 +1674,13 @@ a:hover { text-decoration-color: var(--iris); }
 
   .dock__word { display: none; }
   .dock__hf span { display: none; }
-  .dock__caption { font-size: .96rem; }
-  .dock__veil { height: 13rem; }
+  .dock__caption { font-size: .96rem; max-width: none; }
+  .dock__veil { height: 14rem; }
+  .dock__inner { max-width: none; padding-right: var(--pad); }
   .dock__logPanel { bottom: 8.6rem; max-height: 36svh; }
   .dock__step i { max-width: 8rem; }
+
+  .booking__fields { grid-template-columns: minmax(0, 1fr); }
   .hud__panel {
     left: var(--pad);
     right: var(--pad);

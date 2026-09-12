@@ -24,6 +24,7 @@ export const TOOL_VERBS: Record<string, string> = {
   search_experience: "search",
   get_project_detail: "retrieve",
   open_page: "navigate",
+  scroll_page: "scroll",
   check_availability: "calendar",
   book_meeting: "book",
   contact_request: "draft",
