@@ -24,9 +24,10 @@ const HOST_EMAIL = process.env.BOOKING_HOST_EMAIL?.trim() || "haiderali2689832@g
 /** the zone the working hours below are expressed in */
 export const HOST_TZ = process.env.BOOKING_TIMEZONE?.trim() || "Asia/Karachi";
 /* The window may cross midnight: a close hour past 24 means "into the next
-   morning". The default is his real availability — 10:00 until 04:00 the
-   following day, i.e. unavailable only from 4am to 10am. */
-const OPEN_HOUR = Number(process.env.BOOKING_OPEN_HOUR ?? 10);
+   morning". The default is his real availability — 16:00 until 04:00 the
+   following day, which lands inside business hours for Pakistan's evening,
+   Europe's afternoon, and the whole US day. */
+const OPEN_HOUR = Number(process.env.BOOKING_OPEN_HOUR ?? 16);
 const CLOSE_HOUR = Number(process.env.BOOKING_CLOSE_HOUR ?? 28);
 const SLOT_MINUTES = Number(process.env.BOOKING_SLOT_MINUTES ?? 30);
 /* days the window never opens, by the day it STARTS on (Sat night running
