@@ -76,8 +76,17 @@ export const TOOLS = [
   {
     name: "check_availability",
     description:
-      "Read real open slots from the calendar. Call this before offering any time. Never invent or guess availability.",
-    parameters: { type: "object", properties: {} },
+      "Read real open slots from the calendar. Call this before offering any time — never invent or guess availability. If the visitor asks for a specific time, day, or part of day (in ANY timezone), call this AGAIN with preferred_iso set to that moment; the slots returned are the nearest open ones to it. Never tell them a time is unavailable without having checked with preferred_iso.",
+    parameters: {
+      type: "object",
+      properties: {
+        preferred_iso: {
+          type: "string",
+          description:
+            "the moment the visitor asked for, as full ISO 8601 with a UTC offset, e.g. 2026-09-14T10:00:00-07:00 for 10am Pacific. Convert their words (their timezone) into this yourself. Omit for a first general check.",
+        },
+      },
+    },
   },
   {
     name: "book_meeting",
@@ -244,7 +253,7 @@ const DISPATCH: Record<string, Handler> = {
     return { ok: true, ...d };
   },
 
-  async check_availability(_args, ctx) {
+  async check_availability(args, ctx) {
     if (!calendarReady()) {
       return {
         ok: true,
@@ -253,20 +262,40 @@ const DISPATCH: Record<string, Handler> = {
       };
     }
     try {
-      const slots = await freeSlots(ctx.signal, 6);
-      if (slots.length === 0) {
+      // read the whole horizon, then rank: a visitor asking for "10am
+      // Pacific" must be answered from every open slot, not the earliest six
+      const all = await freeSlots(ctx.signal, 400);
+      if (all.length === 0) {
         return { ok: true, slots: [], say: "Nothing open in the next week or so. Offer to take it by email." };
       }
+
+      let picked = all.slice(0, 6);
+      let ranked = false;
+      const wanted = str(args, "preferred_iso");
+      if (wanted) {
+        const at = new Date(wanted).getTime();
+        if (!Number.isNaN(at)) {
+          picked = [...all]
+            .sort((a, b) => Math.abs(new Date(a.start).getTime() - at) - Math.abs(new Date(b.start).getTime() - at))
+            .slice(0, 6)
+            .sort((a, b) => a.start.localeCompare(b.start));
+          ranked = true;
+        }
+      }
+
       return {
         ok: true,
         visitor_timezone: ctx.tz,
-        slots: slots.map((s) => ({
+        ...(ranked ? { note: "these are the open slots NEAREST the requested time" } : {}),
+        slots: picked.map((s) => ({
           slot_id: s.start,
           // both clocks, because that is the whole point of the scheduling work
           their_time: describe(new Date(s.start), ctx.tz),
           my_time: describe(new Date(s.start), HOST_TZ),
         })),
-        say: "Offer two or three of these in THEIR time, never in yours. Use the slot_id verbatim when booking.",
+        say: ranked
+          ? "Offer the closest matches in the timezone THEY have been using. If none are close to what they asked, say what the nearest actually is."
+          : "Offer two or three of these in THEIR time, never in yours. Use the slot_id verbatim when booking.",
       };
     } catch (e) {
       return {

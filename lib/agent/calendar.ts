@@ -230,8 +230,9 @@ export async function book(
   const end = new Date(start.getTime() + SLOT_MINUTES * 60_000);
 
   // re-check the slot at the moment of writing: availability read a few turns
-  // ago is a recollection, not a fact
-  const slots = await freeSlots(signal, 40);
+  // ago is a recollection, not a fact. The limit must cover the WHOLE
+  // horizon, or a legitimate slot days out is falsely reported taken.
+  const slots = await freeSlots(signal, 400);
   if (!slots.some((s) => s.start === start.toISOString())) {
     return { ok: false, reason: "taken", message: "that slot is no longer free" };
   }
