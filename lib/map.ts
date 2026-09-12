@@ -11,6 +11,8 @@ import type { MapNode } from "./map-layout";
 const SHORT: Record<string, string> = {
   "wellness-launch": "Wellness launch",
   "signl": "Signl",
+  "followup-engine": "Follow-up engine",
+  "voice-deployments": "Client deployments",
   "luma-bistro": "Luma Bistro",
   "campus-navigation": "Campus navigation",
   "site-agent": "This site's agent",

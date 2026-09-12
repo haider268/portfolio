@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TOOL_VERBS, toolDetail, toolSlugs, useSystem } from "@/lib/state";
 
 /* The agent's client half.
@@ -22,6 +23,11 @@ export type FeedItem =
 
 const CLOSING = "Thanks for stopping by. Email haiderali2689832@gmail.com any time.";
 
+/* Spoken the moment a session opens — the agent talks first. Recorded in
+   the history as a model turn so the model knows it already greeted. */
+const GREETING =
+  "Hello, welcome to Haider's portfolio. I'm the live agent that runs it — ask me about the work, or tell me where you'd like to go.";
+
 type Recognition = {
   lang: string;
   interimResults: boolean;
@@ -34,6 +40,7 @@ type Recognition = {
 };
 
 export function useAgent() {
+  const router = useRouter();
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState("");
@@ -198,6 +205,9 @@ export function useAgent() {
               );
               push({ kind: "tool", verb, detail, ok: ev.ok });
               if (ev.send_url) push({ kind: "draft", href: ev.send_url, reference: ev.reference });
+              // the agent drives the browser: a successful open_page event
+              // navigates the site the visitor is looking at
+              if (typeof ev.path === "string") router.push(ev.path);
             } else if (ev.type === "chunk") {
               setPhase("speaking");
               reply = reply ? `${reply} ${ev.text}` : ev.text;
@@ -250,6 +260,19 @@ export function useAgent() {
     }
   }, [busy, phase, send, setPhase]);
 
+  /* The agent speaks first. Watching `live` (rather than wiring this into
+     one button) means every way of opening a session greets — the dock
+     pill, the map's core, the manifest, or /demo arriving already open. */
+  const greeted = useRef(false);
+  useEffect(() => {
+    if (!live || greeted.current || history.current.length > 0) return;
+    greeted.current = true;
+    stopped.current = false;
+    push({ kind: "agent", text: GREETING });
+    history.current = [{ role: "model", text: GREETING }];
+    speak(GREETING);
+  }, [live, push, speak]);
+
   const begin = useCallback(() => {
     setLive(true);
   }, [setLive]);
@@ -268,6 +291,7 @@ export function useAgent() {
     setFeed([]);
     clearChain();
     setPhase("idle");
+    greeted.current = false; // a fresh session greets again
   }, [clearChain, setPhase]);
 
   return {

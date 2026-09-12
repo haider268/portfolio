@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutNodes, type MapNode, type PlacedNode } from "@/lib/map-layout";
 import { useSystem } from "@/lib/state";
-import AgentConsole from "./agent/AgentConsole";
 
 /* THE STAGE IS THE SITE.
 
@@ -207,9 +206,6 @@ export default function MapStage({
           )}
         </aside>
 
-        <div className="hud__console" data-live={live || undefined}>
-          <AgentConsole />
-        </div>
       </div>
     </section>
   );

@@ -45,7 +45,7 @@ export function layoutNodes(nodes: MapNode[]): PlacedNode[] {
       ...n,
       angle,
       flip: i % 2 === 1,
-      pos: [Math.cos(angle) * 2.45, 0.85 * Math.sin(i * 2.7) + 0.05, Math.sin(angle) * 2.45],
+      pos: [Math.cos(angle) * 2.6, 0.9 * Math.sin(i * 2.7) + 0.05, Math.sin(angle) * 2.6],
     });
   });
 
@@ -55,7 +55,7 @@ export function layoutNodes(nodes: MapNode[]): PlacedNode[] {
     if (used.length) {
       const sx = used.reduce((s, a) => s + Math.cos(a), 0);
       const sy = used.reduce((s, a) => s + Math.sin(a), 0);
-      angle = Math.atan2(sy, sx) + (i % 2 ? 0.34 : -0.34);
+      angle = Math.atan2(sy, sx) + (i % 2 ? 0.42 : -0.42);
     } else {
       angle = (i / Math.max(work.length, 1)) * Math.PI * 2 + 0.5;
     }
@@ -63,7 +63,7 @@ export function layoutNodes(nodes: MapNode[]): PlacedNode[] {
       ...n,
       angle,
       flip: i % 2 === 1,
-      pos: [Math.cos(angle) * 4.35, 1.3 * Math.sin(i * 2.1) + 0.3, Math.sin(angle) * 4.35],
+      pos: [Math.cos(angle) * 4.75, 1.5 * Math.sin(i * 2.1) + 0.3, Math.sin(angle) * 4.75],
     });
   });
 

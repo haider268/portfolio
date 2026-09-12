@@ -97,6 +97,8 @@ export async function POST(req: Request) {
               args: call.args,
               ok: out.ok,
               hits,
+              // a successful open_page carries the path; the browser follows it
+              path: call.name === "open_page" && typeof out.path === "string" ? out.path : undefined,
               ms: Date.now() - started,
               // the draft the visitor still has to send themselves — the agent
               // is told to say so, and this is the link that makes it true

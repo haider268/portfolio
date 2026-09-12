@@ -23,6 +23,7 @@ export type AgentPhase =
 export const TOOL_VERBS: Record<string, string> = {
   search_experience: "search",
   get_project_detail: "retrieve",
+  open_page: "navigate",
   check_availability: "calendar",
   book_meeting: "book",
   contact_request: "draft",
@@ -91,6 +92,7 @@ export function toolDetail(name: string, args: Record<string, unknown>): string 
   const pick =
     name === "search_experience" ? args.query :
     name === "get_project_detail" ? args.slug :
+    name === "open_page" ? args.target :
     name === "book_meeting" ? args.topic :
     undefined;
   return typeof pick === "string" ? pick.slice(0, 48) : undefined;
@@ -99,6 +101,7 @@ export function toolDetail(name: string, args: Record<string, unknown>): string 
 /** which document slugs a tool event actually touched */
 export function toolSlugs(name: string, args: Record<string, unknown>, hits?: unknown): string[] {
   if (name === "get_project_detail" && typeof args.slug === "string") return [args.slug];
+  if (name === "open_page" && typeof args.target === "string") return [args.target];
   if (name === "search_experience" && Array.isArray(hits)) {
     return hits.filter((h): h is string => typeof h === "string").slice(0, 5);
   }

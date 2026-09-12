@@ -103,7 +103,7 @@ function Graph({
 
   useEffect(() => {
     const o = orbit.current;
-    o.tRadius = o.radius = compact ? 11.2 : 9.0;
+    o.tRadius = o.radius = compact ? 11.9 : 9.6;
   }, [compact]);
 
   useEffect(() => {

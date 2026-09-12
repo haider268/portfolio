@@ -1,0 +1,38 @@
+---
+title: The follow-up engine
+kicker: Where most of the conversions actually came from
+summary: Missed-call recovery, nurture across every pipeline stage, and database reactivation — the machinery that converts after the first touch fails.
+metric: ~75% of launch conversions
+order: 25
+role: GTM / pipeline engineering
+stack: ["GoHighLevel", "Twilio", "SMS", "Email", "Webhooks"]
+uses: ["messaging-automation", "gtm-engineering", "pipelines-crm"]
+---
+
+The first call gets the attention. The follow-up gets the revenue: in the
+[launch that filled an opening week](/work/wellness-launch), roughly
+three quarters of conversions were driven by automated follow-up rather
+than the first touch — with zero manual lead handling anywhere.
+
+## What runs
+
+- **Missed-call recovery.** A call that goes unanswered triggers an
+  instant SMS with a booking link, so the lead's moment of intent is never
+  wasted on a voicemail.
+- **Nurture at every stage.** Sequences keyed to pipeline stage in the
+  CRM, not one blast list — a lead that books leaves the nurture path
+  automatically, a lead that stalls gets the next touch.
+- **Database reactivation.** Multi-channel SMS and email loops run
+  against dormant legacy lead bases — [gated strictly to each
+  recipient's local business hours](/systems/scheduling-timezone), with
+  STOP flipping do-not-disturb automatically.
+- **Write-back.** Every outcome — booked, replied, opted out — lands in
+  the CRM record, so the pipeline reporting is the system's own log,
+  not a spreadsheet reconstructed after the fact.
+
+## The engineering underneath
+
+Event-driven, webhook-orchestrated, and built on the same
+[middleware discipline](/systems/gtm-engineering) as everything else:
+validation before any send, retry with backoff, and error recovery flows —
+production automations holding above 99% run reliability.

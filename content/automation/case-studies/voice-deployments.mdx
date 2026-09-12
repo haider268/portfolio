@@ -1,0 +1,41 @@
+---
+title: Voice agents across four verticals
+kicker: Healthcare · insurance · med spas · golf academies
+summary: Production voice agents live with real callers across multiple client deployments — owned end to end, from telephony routing to post-call write-back.
+metric: real callers, multiple live clients
+order: 22
+role: Voice AI Engineer — agent behaviour end to end
+stack: ["VAPI", "Retell", "Deepgram", "Twilio", "SIP"]
+uses: ["voice-agents", "call-qa", "scheduling-timezone", "reliability"]
+---
+
+Not one deployment — a practice. Production voice agents answering real
+callers for healthcare clinics, insurance brokerages, med spas, and golf
+academies, several of them multi-location and spanning timezones. Every
+client is anonymised here; the mechanics are not.
+
+## Owned end to end
+
+- **Conversation behaviour.** Flow, turn-taking, interruption handling,
+  tool calls, and human handoff — the full
+  [agent surface](/systems/voice-agents), replicating each client's real
+  qualification, booking, and escalation logic.
+- **Telephony that respects the humans.** Conditional routing rings the
+  desk phone first; only an unanswered call fails over to the agent, and
+  rule-based transfers hand a live caller back to a person when the
+  conversation calls for it.
+- **A tuned speech pipeline.** Deepgram model, endpointing and
+  sensitivity settings evaluated against real call recordings — the
+  latency-versus-quality tradeoff [retuned per deployment](/systems/call-qa),
+  not defaulted.
+- **Post-call pipelines.** Summaries, outcomes, recordings and contact
+  updates land automatically on the correct CRM record over webhooks —
+  the office opens in the morning to a system that already filed its
+  own paperwork.
+
+## Why it holds up
+
+Every deployment carries the same [reliability floor](/systems/reliability):
+webhook orchestration, logging, monitoring, retry handling, and failure
+recovery — and live call issues are flagged by the system before a client
+reports them.

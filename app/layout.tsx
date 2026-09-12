@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import AgentDock from "@/components/agent/AgentDock";
 import "./globals.css";
 
 /* Three voices, each with one job. Instrument Serif speaks only in display
@@ -54,7 +55,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* the agent rides above every page and survives its own navigation */}
+        <AgentDock />
+      </body>
     </html>
   );
 }

@@ -44,6 +44,21 @@ export const TOOLS = [
     },
   },
   {
+    name: "open_page",
+    description:
+      "Open a page of this site in the visitor's browser. Use whenever they ask to see, open, visit, or be taken to something — the site navigates for them. Target is a page slug from the contents index, or one of: home, work, systems, contact, agent.",
+    parameters: {
+      type: "object",
+      properties: {
+        target: {
+          type: "string",
+          description: "a page slug (e.g. scheduling-timezone) or home | work | systems | contact | agent",
+        },
+      },
+      required: ["target"],
+    },
+  },
+  {
     name: "check_availability",
     description:
       "Read real open slots from the calendar. Call this before offering any time. Never invent or guess availability.",
@@ -148,6 +163,41 @@ const DISPATCH: Record<string, Handler> = {
       };
     }
     return { ok: true, hits };
+  },
+
+  open_page(args) {
+    const target = str(args, "target")?.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!target) return { ok: false, error_code: "INVALID_ARGUMENTS", message: "target is required" };
+
+    const FIXED: Record<string, { path: string; title: string }> = {
+      home: { path: "/", title: "the system map" },
+      map: { path: "/", title: "the system map" },
+      work: { path: "/work", title: "the work index" },
+      systems: { path: "/systems", title: "the subsystems index" },
+      contact: { path: "/contact", title: "contact" },
+      agent: { path: "/demo", title: "the agent" },
+    };
+    const fixed = FIXED[target];
+    if (fixed) {
+      return { ok: true, ...fixed, say: "Say in one short sentence that you have opened it." };
+    }
+
+    const d = detail(target);
+    if (!d) {
+      return {
+        ok: false,
+        error_code: "NOT_FOUND",
+        message: `No page for "${target}".`,
+        contents: contents(),
+        say: "Pick the closest slug from contents and try open_page again, or say you could not find it.",
+      };
+    }
+    return {
+      ok: true,
+      path: d.path,
+      title: d.title,
+      say: "Say in one short sentence that you have opened the page, and offer one thing worth noticing on it.",
+    };
   },
 
   get_project_detail(args) {
