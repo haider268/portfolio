@@ -1,0 +1,41 @@
+---
+title: The Speech Loop, From Scratch
+kicker: No vendor platform underneath
+summary: My own STT → LLM → TTS loop over WebSocket and WebRTC — barge-in, endpointing, sentence-chunked streaming, speech safety, swappable model backends.
+metric: speech starts before the reply is finished
+order: 15
+stack: ["WebSocket", "WebRTC", "Silero VAD", "Deepgram", "Cartesia"]
+---
+
+Platform deployments are one half of the [voice practice](/systems/voice-agents).
+This is the other half, and the one that separates writing the loop from
+configuring a dashboard: a real-time speech agent with nothing underneath it
+but code I wrote.
+
+## What the loop owns
+
+- **Barge-in.** Detecting that the caller has started speaking mid-reply,
+  cancelling synthesis, flushing the queue, and yielding the turn. Firing it
+  needs more than noise: over 250ms of continuous voice energy plus spectral
+  speech verification, because a cough is not an interruption.
+- **Turn-taking and endpointing.** Silence handling, Silero VAD, smart-turn
+  detection — tuned against real recordings, not defaults.
+- **Sentence-chunked streaming.** Synthesis starts on the first complete
+  sentence rather than the finished reply. This is most of the perceived
+  latency win.
+- **A speech-safety filter.** Strips leaked JSON, tool names and key/value
+  syntax from the stream, so the model can never read tool output aloud.
+- **Tool loops with a hop ceiling.** Structured error returns instead of
+  exceptions, retry with `Retry-After` parsing, and
+  [deterministic idempotency](/systems/reliability) on anything that writes.
+- **Provider abstraction.** One interface over swappable backends — Gemini,
+  Groq, OpenAI-compatible — selected by configuration, not by rewrite.
+- **A zero-cost browser path.** The same loop on the Web Speech API, for
+  deployments that cannot carry per-minute vendor pricing.
+
+## Where it has run
+
+[Luma Bistro](/work/luma-bistro) is the public build — the code can be read.
+The [campus navigation agent](/work/campus-navigation) is the loop under
+live GPS telemetry. [This site's agent](/work/site-agent) is the browser
+path, running in front of you.

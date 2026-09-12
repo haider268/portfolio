@@ -1,0 +1,34 @@
+---
+title: Sub-second Micro-tools
+kicker: The tool budget is set by human speech
+summary: In-process services with hard latency budgets — a <15ms spatial index, a ~250ms timezone engine, Redis reservation locks — so a live call never waits on a third party.
+metric: <15ms spatial · ~250ms timezone
+order: 25
+stack: ["R-Tree", "PostGIS", "Redis"]
+---
+
+A voice agent cannot wait on a third-party API mid-sentence. Any external
+call past about 300ms stalls synthesis and the caller hears dead air — so
+the lookups that matter are built as in-process services with hard budgets,
+sized by human speech rather than by what the API happens to return.
+
+## The suite
+
+- **Spatial vector estimator, under 15ms.** A RAM-cached R-Tree / PostGIS
+  index computing walking and transit durations at 1.4 m/s. It runs in
+  parallel with speech recognition, so the result is already in context
+  before the model generates its first token. It replaces a Google Maps
+  round trip entirely. Built for the
+  [campus navigation agent](/work/campus-navigation).
+- **Global timezone engine, ~250ms.** In-memory mapping of phone prefixes
+  and postal codes to IANA zones, resolved mid-conversation with no
+  third-party dependency. It feeds the
+  [scheduling layer](/systems/scheduling-timezone), which is why bookings
+  land correctly anywhere on earth.
+- **Inventory and reservation locks.** Redis key-value microservices issuing
+  temporary 60-second hold tokens for room and table availability — a live
+  conversation never blocks on a database transaction, and never deadlocks
+  against another caller holding the same slot.
+
+The pattern generalises: if the agent needs a fact mid-sentence, the fact is
+served from memory, and the service that serves it is mine to budget.

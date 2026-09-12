@@ -1,0 +1,45 @@
+---
+title: Campus navigation by voice, with live telemetry
+kicker: GPS in one channel, speech in the other
+summary: Real-time location-aware voice guidance — live GPS streamed beside the audio, answered by a spatial index fast enough to sit inside a spoken sentence.
+metric: <15ms spatial lookup
+order: 40
+role: Everything — transport, index, loop
+stack: ["WebRTC", "WebSocket", "R-Tree", "PostGIS", "Silero VAD"]
+uses: ["speech-loop", "micro-tools", "reliability"]
+---
+
+A caller walking across a campus, asking where to go, while their position
+changes under the conversation. WebSocket carries control signals; WebRTC data
+channels stream live GPS — latitude, longitude, heading, accuracy — in
+parallel with the audio itself.
+
+## Fast enough to sit inside a sentence
+
+"How far is Block B" cannot wait on a mapping API. An in-memory
+[R-Tree / PostGIS spatial index](/systems/micro-tools) computes walking and
+transit durations in under 15 milliseconds, running in parallel with speech
+recognition — so the answer is already in context before the model generates
+its first token.
+
+## What the field did to the design
+
+This is the project that hardened the [speech loop](/systems/speech-loop).
+Every fix below now exists because something real went wrong:
+
+- **Phantom guidance.** Indoor GPS drift past 15 metres produced
+  contradictory turn instructions. Now a location confidence gate: past a
+  15m accuracy radius the agent stops giving vector distances and switches
+  to landmark guidance — "near Block B" instead of "in 40 metres".
+- **False barge-in.** A cough cut the agent off mid-sentence. Barge-in now
+  requires over 250ms of continuous voice energy plus spectral speech
+  verification before the buffer clears.
+- **Echo loop.** Speaker audio bled into the mic and the agent transcribed
+  itself. Server-side echo cancellation, plus an output mute gate on the
+  STT pipeline while synthesis is playing.
+- **Mid-sentence target switching.** "Take me to Block B… actually, the
+  library." A streaming intent parser invalidates the previous tool result
+  the moment a new spatial entity appears — a soft reset that keeps the
+  rest of the conversation.
+
+The full set lives in the [failure catalogue](/systems/reliability).

@@ -2,6 +2,7 @@ import type { MDXComponents } from "mdx/types";
 import Anchor from "./Anchor";
 import Trace from "./Trace";
 import FailureTiers from "./FailureTiers";
+import FailureMap from "./FailureMap";
 import SystemDiagram from "./SystemDiagram";
 
 /* The component map MDX bodies render through. Anything an author reaches for
@@ -21,5 +22,6 @@ export const mdxComponents: MDXComponents = {
   Note,
   Trace,
   FailureTiers,
+  FailureMap,
   SystemDiagram,
 };

@@ -1,0 +1,45 @@
+---
+title: Luma Bistro — a voice agent with no platform underneath
+kicker: Built from scratch · public repository
+summary: A from-scratch real-time voice agent — two independent front-ends over one shared core, with an automated evaluation harness. The code can be read.
+metric: two transports, one core
+order: 30
+role: Everything — loop, tools, evaluation
+stack: ["Web Speech", "Deepgram", "Cartesia", "WebRTC", "WebSocket"]
+uses: ["speech-loop", "reliability", "call-qa"]
+---
+
+Most voice agents in this market are a dashboard configuration. This one is a
+[speech loop written in code](/systems/speech-loop), and the repository is
+public: [github.com/haider268/luma-bistro-voice-agent](https://github.com/haider268/luma-bistro-voice-agent).
+
+## Two front-ends, one core
+
+The same agent core drives two completely different transports:
+
+- **A zero-cost browser path** on the Web Speech API — for deployments that
+  cannot carry per-minute vendor pricing.
+- **A streaming pipeline** — Deepgram speech-to-text and Cartesia synthesis
+  over WebRTC, for the latency a phone call demands.
+
+The point of the split is what it proves: the conversation logic, tool
+dispatch, and safety layers live in the core, not in whichever vendor happens
+to be underneath.
+
+## What the core enforces
+
+- **Deterministic idempotency** on writes — a duplicate booking is
+  structurally impossible, not merely unlikely.
+- **A tool loop with a hop ceiling** and structured error returns, so a
+  confused model escalates instead of looping.
+- **Speech-safety filtering** that strips leaked JSON, tool names and
+  key/value syntax before synthesis — the model can never read its own
+  tooling aloud.
+- **Provider abstraction** — one interface, swappable model backends
+  selected by configuration.
+
+## The harness
+
+An automated evaluation harness runs conversations against the agent and
+checks the outcomes, which is what lets the loop change without the
+[reliability story](/systems/reliability) changing underneath it.

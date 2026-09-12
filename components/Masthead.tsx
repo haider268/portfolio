@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-/* A fixed hairline rail. On the homepage it floats over the stage; on doc
-   pages it sits over the page ground. The nav is anchors into the one
-   system, not a second sitemap. */
+/* A fixed hairline rail. The map is the primary navigation; this is the
+   plain one — every destination, always reachable, no WebGL required. */
 export default function Masthead() {
   return (
     <header className="frame">
@@ -10,11 +9,10 @@ export default function Masthead() {
         Haider Ali <span>/ AI systems</span>
       </Link>
       <nav className="frame__nav" aria-label="Site">
-        <a href="/#work">Work</a>
-        <a href="/#systems">Systems</a>
-        <a href="/#pipeline">Pipeline</a>
-        <a href="/#reliability">Reliability</a>
-        <a href="/#contact">Contact</a>
+        <Link href="/work">Work</Link>
+        <Link href="/systems">Systems</Link>
+        <Link href="/demo">Agent</Link>
+        <Link href="/contact">Contact</Link>
       </nav>
     </header>
   );

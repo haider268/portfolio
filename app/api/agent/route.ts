@@ -84,12 +84,19 @@ export async function POST(req: Request) {
           for (const call of result.calls) {
             const started = Date.now();
             const out = await dispatch(call.name, call.args, { tz, ip, signal: req.signal });
-            // the visitor watches this fire before the answer arrives
+            // the visitor watches this fire before the answer arrives — and
+            // the system map lights the documents the search actually found
+            const hits = Array.isArray(out.hits)
+              ? (out.hits as { slug?: unknown }[])
+                  .map((h) => h?.slug)
+                  .filter((s): s is string => typeof s === "string")
+              : undefined;
             send({
               type: "tool",
               name: call.name,
               args: call.args,
               ok: out.ok,
+              hits,
               ms: Date.now() - started,
               // the draft the visitor still has to send themselves — the agent
               // is told to say so, and this is the link that makes it true
@@ -143,6 +150,7 @@ function groundedFallback(
     name: "search_experience",
     args: { query: text },
     ok: true,
+    hits: hits.map((h) => h.slug),
     ms: Date.now() - started,
   });
 

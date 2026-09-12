@@ -1,0 +1,45 @@
+---
+title: GTM & Webhook Middleware
+kicker: Infrastructure that points at a pipeline
+summary: An ingestion layer that verifies HMAC signatures, normalises every vendor's payload, and answers in under 100ms — with rate limits, circuit breakers and dead-letter queues behind it.
+metric: ack in <100ms
+order: 35
+stack: ["Node.js", "Express", "Redis", "BullMQ", "Twilio HLR", "Clay"]
+---
+
+Revenue-side systems engineering, not marketing. The work here is
+infrastructure that happens to point at a pipeline.
+
+## The middleware
+
+A Node.js/Express and Redis ingestion layer sits in front of everything. It
+verifies **HMAC SHA-256** signatures, normalises every vendor's payload into
+one canonical schema, and holds a 60-second idempotency lock so a retried
+webhook cannot double-write. The caller gets its acknowledgement in under
+100ms; the real work goes to **BullMQ** in the background — the vendor is
+never kept waiting, and nothing is lost if processing is slow.
+
+## Staying inside everyone's limits
+
+- **Token-bucket rate limiters** mapped to each vendor's actual published
+  cap — HubSpot at 10 requests a second, and so on.
+- **Exponential backoff with full jitter** on retries.
+- **A circuit breaker** that fails a primary provider over to a secondary —
+  Twilio to AWS SNS — instead of hammering an outage.
+- **Dead-letter queues** that raise a Slack alert rather than swallowing the
+  failure. The [no-silent-failures rule](/systems/reliability) applies here
+  first.
+
+## Before the dial, and after
+
+Twilio **HLR lookup** strips landlines and non-fixed VoIP numbers out of the
+dialer queue before a call is ever attempted. A **Clay** waterfall
+enrichment layers firmographics, revenue band and tech stack onto the
+record, and the score decides the treatment: qualified mobile leads to a
+direct dialer, everything else to email nurture.
+
+Downstream, [CRM orchestration](/systems/pipelines-crm) runs across
+GoHighLevel, HubSpot, Salesforce, Zoho and Pipedrive — tagging, staging,
+deduplication, write-back and reporting — and multi-channel
+**database reactivation** loops run against dormant lead bases, gated
+strictly to each recipient's local business hours.

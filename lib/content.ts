@@ -30,6 +30,9 @@ const Frontmatter = z.object({
   stack: z.array(z.string()).default([]),
   year: z.string().optional(),
   role: z.string().optional(),
+  /** capability slugs this work runs on — these are the edges of the system
+      map on the homepage; an unknown slug simply draws no edge */
+  uses: z.array(z.string()).default([]),
 });
 
 export type Doc = z.infer<typeof Frontmatter> & {

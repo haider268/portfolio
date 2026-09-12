@@ -1,0 +1,40 @@
+---
+title: The agent running this site
+kicker: One corpus, two consumers
+summary: A working agent on the site itself — it answers from the same MDX files that render these pages, and shows every tool call as it fires.
+metric: every fact is a live read
+order: 50
+role: The site and the agent, one repo
+stack: ["Next.js", "Web Speech", "SSE", "Gemini / Groq"]
+uses: ["speech-loop", "llm-orchestration", "reliability"]
+---
+
+The portfolio does not describe an agent. It runs one —
+[talk to it](/demo).
+
+## The shape
+
+Speech recognition and synthesis run in your browser, so the server only
+moves text: a question goes up, a tool loop runs, and the reply streams back
+sentence by sentence over SSE. Every tool call is rendered in the interface
+as it fires, and on the homepage map you can watch it light up the pages it
+is reading.
+
+The agent reads the same MDX files that render this site — not a separate
+knowledge base written to describe them. Add a page and the agent knows it;
+there is no second corpus to drift.
+
+## What it will not do
+
+It answers only from what it retrieves. Ask it something these pages do not
+say and it tells you so and offers a handoff — it never improvises a
+plausible answer, quotes a metric it has not read, or sends anything on your
+behalf. Anything it drafts, you send.
+
+## The honest tradeoff
+
+The browser speech path is the [zero-cost deployment](/systems/speech-loop)
+of the loop: around 2.7 seconds median from question to first audio,
+against the 1000–1500ms budget of the production builds. That gap is the
+price of running the whole demonstration on free infrastructure — and the
+[production discipline](/systems/reliability) is the same either way.

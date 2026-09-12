@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TOOL_VERBS, toolDetail, useSystem } from "@/lib/state";
+import { TOOL_VERBS, toolDetail, toolSlugs, useSystem } from "@/lib/state";
 
 /* The agent's client half.
 
@@ -190,8 +190,12 @@ export function useAgent() {
             if (ev.type === "tool") {
               const verb = TOOL_VERBS[ev.name] ?? ev.name;
               const detail = toolDetail(ev.name, ev.args ?? {});
-              // one real event, three surfaces: store (scene), chain, feed
-              pushTool({ name: ev.name, verb, detail, ok: ev.ok });
+              // one real event, three surfaces: map, chain, feed — with the
+              // slugs the tool actually touched, so the map can flare them
+              pushTool(
+                { name: ev.name, verb, detail, ok: ev.ok },
+                toolSlugs(ev.name, ev.args ?? {}, ev.hits)
+              );
               push({ kind: "tool", verb, detail, ok: ev.ok });
               if (ev.send_url) push({ kind: "draft", href: ev.send_url, reference: ev.reference });
             } else if (ev.type === "chunk") {

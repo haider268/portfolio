@@ -1,0 +1,30 @@
+---
+title: LLM Engineering & Orchestration
+kicker: Agent graphs, retrieval, structured outputs
+summary: LangGraph agent graphs with explicit control flow, RAG pipelines that ground answers on a private corpus, and schema-constrained outputs driving downstream execution.
+metric: facts the model has actually read
+order: 45
+stack: ["LangChain", "LangGraph", "RAG", "JSON Schema"]
+---
+
+The model is the least interesting part of an agent. The engineering is in
+what surrounds it: control flow, grounding, and the contract between the
+model's output and the systems that act on it.
+
+## The pieces
+
+- **LangGraph** for work a single prompt cannot hold: stateful, multi-step
+  agent graphs with explicit control flow, branching, and recovery paths.
+  When a step fails, the graph knows — it does not improvise.
+- **RAG pipelines** — chunking, embedding, vector retrieval — so the model
+  states facts it has actually read instead of answering from parametric
+  memory. The [agent on this site](/work/site-agent) is the smallest
+  honest version of that idea.
+- **Structured outputs.** JSON-schema-constrained generation and tool
+  calling, so a model turn is something downstream code can execute, not
+  something a human has to interpret.
+- **Prompt engineering for production** — business logic, personas, edge
+  cases, fallbacks, and confirmation gates before any write.
+- **Model selection against real workloads.** Latency, cost and rate-limit
+  characteristics measured on the actual traffic, not on benchmarks — the
+  same discipline as the [turn-latency budget](/systems/voice-agents).
