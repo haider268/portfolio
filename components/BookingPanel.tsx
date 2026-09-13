@@ -13,6 +13,28 @@ import { CONTACT } from "@/lib/contact";
 
 type SlotView = { slot_id: string; their_time: string; host_time: string };
 
+/** the chip text: "Mon 14 · 4:00 pm" — the full sentence lives in the
+    accessible label and the confirmation, not on a hundred buttons */
+function shortSlot(iso: string, tz: string): string {
+  try {
+    const at = new Date(iso);
+    const day = new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz || undefined,
+      weekday: "short",
+      day: "numeric",
+    }).format(at);
+    const time = new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz || undefined,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(at);
+    return `${day} · ${time}`;
+  } catch {
+    return iso;
+  }
+}
+
 type Phase =
   | { kind: "loading" }
   | { kind: "off" }                       // calendar not connected / unreachable
@@ -141,11 +163,13 @@ export default function BookingPanel() {
                 type="button"
                 role="radio"
                 aria-checked={selected === s.slot_id}
+                aria-label={s.their_time}
+                title={s.their_time}
                 className="booking__slot"
                 onClick={() => setSelected(s.slot_id)}
                 disabled={phase.kind === "booking"}
               >
-                {s.their_time}
+                {shortSlot(s.slot_id, tz)}
               </button>
             ))}
           </div>

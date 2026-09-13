@@ -1538,10 +1538,14 @@ a:hover { text-decoration-color: var(--iris); }
 .booking__off a:hover { color: var(--iris-bright); }
 
 .booking__slots {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
   gap: .45rem;
   margin: 1.2rem 0 1.6rem;
+}
+.booking__slot {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .booking__slot {
   font-family: var(--mono);
@@ -1675,7 +1679,10 @@ a:hover { text-decoration-color: var(--iris); }
   .dock__word { display: none; }
   .dock__hf span { display: none; }
   .dock__caption { font-size: .96rem; max-width: none; }
-  .dock__veil { height: 14rem; }
+  .dock__veil { height: 20rem; }
+  .dock__line { gap: .4rem; }
+  .dock__end svg { width: 1.7rem; height: 1.7rem; }
+  .dock__input { min-width: 4.5rem; }
   .dock__inner { max-width: none; padding-right: var(--pad); }
   .dock__logPanel { bottom: 8.6rem; max-height: 36svh; }
   .dock__step i { max-width: 8rem; }
@@ -1745,4 +1752,11 @@ a:hover { text-decoration-color: var(--iris); }
 
   .pipe__marks { display: none; }
   .trace__row { opacity: 1; }
+}
+
+/* true phones: the transcript yields to the conversation itself */
+@media (max-width: 34rem) {
+  .dock__log { display: none; }
+  .dock__logPanel { display: none; }
+  .booking__slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

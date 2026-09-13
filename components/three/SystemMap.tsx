@@ -101,10 +101,18 @@ function Graph({
   /* orbit state: drag rotates the map, wheel/pinch zooms the camera */
   const orbit = useRef({ ry: 0, rx: -0.12, tRy: 0, tRx: -0.12, radius: 0, tRadius: 0 });
 
+  /* Frame the map for the screen it is actually on: portrait phones need
+     the camera further back or the outer ring crops at both edges. Runs
+     again on every resize/rotation, so the framing follows the viewport. */
   useEffect(() => {
     const o = orbit.current;
-    o.tRadius = o.radius = compact ? 11.9 : 9.6;
-  }, [compact]);
+    const aspect = size.width / Math.max(size.height, 1);
+    const base = compact ? 11.9 : 9.6;
+    const fit = clamp(base * (aspect < 1 ? 0.78 / aspect : 1), base, 19);
+    const first = o.radius === 0;
+    o.tRadius = fit;
+    if (first) o.radius = fit;
+  }, [compact, size.width, size.height]);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -121,14 +129,15 @@ function Graph({
       if (!dragging) return;
       const o = orbit.current;
       o.tRy += (e.clientX - px) * 0.005;
-      o.tRx = clamp(o.tRx + (e.clientY - py) * 0.0032, -0.55, 0.4);
+      // trackball direction: dragging up rolls the map up (top tilts away)
+      o.tRx = clamp(o.tRx - (e.clientY - py) * 0.0032, -0.55, 0.4);
       px = e.clientX; py = e.clientY;
     };
     const up = () => { dragging = false; };
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
       const o = orbit.current;
-      o.tRadius = clamp(o.tRadius + e.deltaY * 0.004, 5.2, 13);
+      o.tRadius = clamp(o.tRadius + e.deltaY * 0.004, 3.5, 19.5);
     };
     const touchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
@@ -145,7 +154,7 @@ function Graph({
           e.touches[0].clientY - e.touches[1].clientY
         );
         const o = orbit.current;
-        o.tRadius = clamp(o.tRadius - (d - pinch) * 0.02, 5.2, 13);
+        o.tRadius = clamp(o.tRadius - (d - pinch) * 0.02, 3.5, 19.5);
         pinch = d;
       }
     };
@@ -337,10 +346,16 @@ function Graph({
       v.project(camera);
       const x = (v.x * 0.5 + 0.5) * size.width;
       const y = (1 - (v.y * 0.5 + 0.5)) * size.height;
+      // a label clipped mid-word at the screen edge reads as a bug; hide it
+      // and let the node itself carry the position until it orbits back in.
+      // Measured against the label's real width, not just its anchor.
+      const half = el.offsetWidth / 2;
+      const offscreen =
+        x - half < 4 || x + half > size.width - 4 || y < 44 || y > size.height - 20;
       const behind = v.z > 1;
       const anchor = p.flip && p.kind !== "core" ? "0%" : "-100%";
       el.style.transform = `translate(-50%, ${anchor}) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-      el.dataset.hidden = behind ? "true" : "false";
+      el.dataset.hidden = behind || offscreen ? "true" : "false";
       el.style.setProperty("--depth", String(clamp(1.45 - depth / 14, 0.42, 1)));
     }
   });
