@@ -14,9 +14,9 @@
 
 :root {
   /* ── ground ── */
-  --bg0: #0a0b0e;
-  --bg1: #0e1014;
-  --bg2: #14161c;
+  --bg0: #08090e;
+  --bg1: #0c0e15;
+  --bg2: #11141c;
 
   /* ── ink ── */
   --ink:      #eae7de;
@@ -28,15 +28,15 @@
   --hair-strong: rgb(234 231 222 / 20%);
 
   /* ── the accent pair ── */
-  --iris:        #8b95e6;
-  --iris-bright: #adb5f2;
-  --iris-deep:   #5a63b8;
-  --iris-wash:   rgb(139 149 230 / 7%);
-  --amber:       #dfc493;
-  --amber-dim:   #a8905e;
+  --iris:        #5578c8;
+  --iris-bright: #8fa9f2;
+  --iris-deep:   #2c4380;
+  --iris-wash:   rgb(85 120 200 / 7%);
+  --amber:       #c9a35e;
+  --amber-dim:   #72582f;
   --end:         #cf7a68;   /* the one functional colour: ending a call */
 
-  --selection: rgb(139 149 230 / 28%);
+  --selection: rgb(85 120 200 / 28%);
 
   /* ── type ── */
   --sans:    var(--font-sans), "Segoe UI", system-ui, sans-serif;
@@ -156,7 +156,7 @@ a:hover { text-decoration-color: var(--iris); }
   gap: 1rem 2rem;
   padding: 0 var(--pad);
   height: 3.5rem;
-  background: rgb(10 11 14 / 62%);
+  background: rgb(8 10 15 / 62%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hair);
@@ -194,7 +194,7 @@ a:hover { text-decoration-color: var(--iris); }
   height: 100svh;
   overflow: hidden;
   background:
-    radial-gradient(110% 85% at 50% 42%, #0d0f16 0%, var(--bg0) 62%);
+    radial-gradient(110% 85% at 50% 42%, #0d1017 0%, var(--bg0) 62%);
 }
 
 .mapstage__scene {
@@ -380,7 +380,7 @@ a:hover { text-decoration-color: var(--iris); }
   font-size: var(--t-mono);
   letter-spacing: .06em;
   color: var(--iris-bright);
-  background: rgb(12 13 18 / 62%);
+  background: rgb(10 12 18 / 62%);
   border: 1px solid var(--hair);
   border-radius: 999px;
   padding: .7rem 1.2rem;
@@ -391,7 +391,7 @@ a:hover { text-decoration-color: var(--iris); }
 .manifest__agentDot {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--iris-bright);
-  box-shadow: 0 0 8px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 8px rgb(85 120 200 / 85%);
 }
 .manifest__list {
   list-style: none;
@@ -454,7 +454,7 @@ a:hover { text-decoration-color: var(--iris); }
   padding: .5rem 1.05rem .5rem .6rem;
   border: 1px solid var(--hair);
   border-radius: 999px;
-  background: rgb(12 13 18 / 66%);
+  background: rgb(10 12 18 / 66%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--ink);
@@ -480,12 +480,12 @@ a:hover { text-decoration-color: var(--iris); }
 /* the inner instrument ring: a slower counter-rotating fragment, neutral
    until a palette gives it a material of its own */
 .summon__orbit2 {
-  stroke: var(--muted);
+  stroke: var(--amber-dim);
   stroke-width: 1;
   fill: none;
   stroke-dasharray: 5 16;
   stroke-linecap: round;
-  opacity: .45;
+  opacity: .55;
   transform-origin: center;
   animation: orbit 12s linear infinite reverse;
 }
@@ -505,9 +505,9 @@ a:hover { text-decoration-color: var(--iris); }
   height: 18rem;
   background: radial-gradient(
     150% 175% at 0% 100%,
-    rgb(8 9 12 / 97%) 0%,
-    rgb(8 9 12 / 88%) 38%,
-    rgb(8 9 12 / 45%) 60%,
+    rgb(6 8 12 / 97%) 0%,
+    rgb(6 8 12 / 88%) 38%,
+    rgb(6 8 12 / 45%) 60%,
     transparent 78%
   );
 }
@@ -564,7 +564,7 @@ a:hover { text-decoration-color: var(--iris); }
   color: var(--ink);
   max-width: 25rem;
   text-wrap: pretty;
-  text-shadow: 0 1px 12px rgb(8 9 12 / 80%);
+  text-shadow: 0 1px 12px rgb(6 8 12 / 80%);
 }
 .dock__caption--empty { color: var(--muted); font-size: var(--t-small); }
 .dock__caption[data-streaming]::after {
@@ -592,7 +592,7 @@ a:hover { text-decoration-color: var(--iris); }
   font-family: var(--mono);
   font-size: var(--t-micro);
   color: var(--ink-dim);
-  background: rgb(12 13 18 / 55%);
+  background: rgb(10 12 18 / 55%);
   border: 1px solid var(--hair);
   border-radius: 999px;
   padding: .5rem .85rem;
@@ -625,12 +625,12 @@ a:hover { text-decoration-color: var(--iris); }
 .dock[data-phase="thinking"] .dock__pip,
 .dock[data-phase="tool"] .dock__pip {
   background: var(--iris-bright);
-  box-shadow: 0 0 8px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 8px rgb(85 120 200 / 85%);
   animation: pip 1.5s ease-in-out infinite;
 }
 .dock[data-phase="speaking"] .dock__pip {
   background: var(--amber);
-  box-shadow: 0 0 8px rgb(223 196 147 / 60%);
+  box-shadow: 0 0 8px rgb(201 163 94 / 75%);
   animation: pip 1.5s ease-in-out infinite;
 }
 @keyframes pip { 50% { opacity: .35; } }
@@ -756,7 +756,7 @@ a:hover { text-decoration-color: var(--iris); }
   overscroll-behavior: contain;
   pointer-events: auto;
   text-align: left;
-  background: rgb(11 12 16 / 94%);
+  background: rgb(9 11 16 / 94%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--hair);
@@ -903,7 +903,7 @@ a:hover { text-decoration-color: var(--iris); }
 .sysentry__metric {
   font-family: var(--mono);
   font-size: var(--t-mono);
-  color: var(--amber);
+  color: #e4c77f;
   white-space: nowrap;
 }
 .sysentry__go {
@@ -953,7 +953,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .bus__entry:hover .bus__node {
   background: var(--iris);
-  box-shadow: 0 0 8px rgb(139 149 230 / 60%);
+  box-shadow: 0 0 8px rgb(85 120 200 / 75%);
 }
 
 .bus__title {
@@ -1025,16 +1025,16 @@ a:hover { text-decoration-color: var(--iris); }
 }
 
 .pipe__wire {
-  stroke: rgb(139 149 230 / 22%);
+  stroke: rgb(85 120 200 / 22%);
   stroke-width: 1;
   fill: none;
 }
-.pipe__wire--main { stroke: rgb(139 149 230 / 45%); }
+.pipe__wire--main { stroke: rgb(85 120 200 / 45%); }
 .pipe__wire--drop { stroke-dasharray: 3 4; }
 
 .pipe__lead {
   fill: var(--iris-bright);
-  filter: drop-shadow(0 0 5px rgb(139 149 230 / 90%));
+  filter: drop-shadow(0 0 5px rgb(85 120 200 / 90%));
 }
 .pipe__lead--drop { fill: var(--end); filter: drop-shadow(0 0 4px rgb(207 122 104 / 80%)); }
 .pipe__lead--soft { fill: var(--amber-dim); filter: drop-shadow(0 0 4px rgb(168 144 94 / 70%)); }
@@ -1088,7 +1088,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .fmap__node[aria-pressed="true"] .fmap__pip {
   background: var(--iris-bright);
-  box-shadow: 0 0 6px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 6px rgb(85 120 200 / 85%);
 }
 
 .fmap__panel {
@@ -1469,7 +1469,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .trace__row[data-passed]::before {
   background: var(--iris);
-  box-shadow: 0 0 0 1px var(--iris), 0 0 8px rgb(139 149 230 / 50%);
+  box-shadow: 0 0 0 1px var(--iris), 0 0 8px rgb(85 120 200 / 50%);
 }
 .trace__t {
   font-family: var(--mono); font-size: var(--t-mono);
@@ -1705,7 +1705,7 @@ a:hover { text-decoration-color: var(--iris); }
     right: var(--pad);
     width: auto;
     bottom: 5.4rem;
-    background: rgb(12 13 18 / 72%);
+    background: rgb(10 12 18 / 72%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--hair);

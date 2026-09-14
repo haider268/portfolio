@@ -24,17 +24,17 @@ import type { PlacedNode } from "@/lib/map-layout";
 
 /* ── palette (matches the CSS custom properties) ───────────────────────── */
 
-const IRIS = new THREE.Color("#8b95e6");
-const IRIS_BRIGHT = new THREE.Color("#adb5f2");
-const IRIS_DEEP = new THREE.Color("#5a63b8");
-const AMBER = new THREE.Color("#dfc493");
-const AMBER_BRIGHT = new THREE.Color("#ecdcb0");
+const IRIS = new THREE.Color("#5578c8");
+const IRIS_BRIGHT = new THREE.Color("#8fa9f2");
+const IRIS_DEEP = new THREE.Color("#2c4380");
+const AMBER = new THREE.Color("#c9a35e");
+const AMBER_BRIGHT = new THREE.Color("#e4c77f");
 const INK = new THREE.Color("#eae7de");
 /* the two wiring materials: core→system spokes and work→system
    dependencies — identical on the incumbent palette, split so a material
    system can treat intelligence-wiring and production-wiring differently */
-const EDGE_SYS = new THREE.Color("#5a63b8");
-const EDGE_WORK = new THREE.Color("#5a63b8");
+const EDGE_SYS = new THREE.Color("#2c4380");
+const EDGE_WORK = new THREE.Color("#8a6f38");
 
 /* ── per-phase energy for the core, same table the console speaks ──────── */
 
@@ -69,9 +69,9 @@ function glowTexture(): THREE.Texture {
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d")!;
   const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  g.addColorStop(0, "rgba(173,181,242,0.85)");
-  g.addColorStop(0.4, "rgba(139,149,230,0.22)");
-  g.addColorStop(1, "rgba(139,149,230,0)");
+  g.addColorStop(0, "rgba(143,169,242,0.95)");
+  g.addColorStop(0.4, "rgba(85,120,200,0.30)");
+  g.addColorStop(1, "rgba(85,120,200,0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
   const tex = new THREE.CanvasTexture(canvas);
@@ -305,12 +305,12 @@ function Graph({
     const now = performance.now();
     const coreE = damp(
       (handles.current.get("core")?.glow.opacity ?? 0.3),
-      0.26 + CORE_ENERGY[sys.phase] * 0.5,
+      0.30 + CORE_ENERGY[sys.phase] * 0.55,
       3, delta
     );
     // the agent's beams die on their own clock
     const beamAge = (now - sys.flare.at) / 3200;
-    if (beamMat.current) beamMat.current.opacity = Math.max(0, 0.65 * (1 - beamAge));
+    if (beamMat.current) beamMat.current.opacity = Math.max(0, 0.85 * (1 - beamAge));
 
     for (const p of placed) {
       const h = handles.current.get(p.slug);
@@ -329,9 +329,9 @@ function Graph({
         continue;
       }
 
-      h.glow.opacity = 0.16 + hot * 0.4 + flared * 0.62;
-      h.wire.opacity = 0.34 + hot * 0.5 + flared * 0.6;
-      h.dot.color.copy(flared > 0.02 ? IRIS_BRIGHT : p.kind === "work" ? AMBER : IRIS);
+      h.glow.opacity = 0.20 + hot * 0.5 + flared * 0.7;
+      h.wire.opacity = 0.46 + hot * 0.5 + flared * 0.6;
+      h.dot.color.copy(flared > 0.02 ? IRIS_BRIGHT : p.kind === "work" ? AMBER_BRIGHT : IRIS_BRIGHT);
       const s = (1 + hot * 0.22 + flared * 0.5) * (1 + Math.sin(t * 1.1 + p.angle * 5) * 0.015);
       h.group.scale.setScalar(s);
       h.group.rotation.y += delta * (0.12 + flared * 1.2);
@@ -342,14 +342,14 @@ function Graph({
     if (since < 1.1) {
       const k = 0.4 + since * 3.4;
       ring.current.scale.setScalar(k);
-      ringMat.current.opacity = 0.45 * (1 - since / 1.1);
+      ringMat.current.opacity = 0.6 * (1 - since / 1.1);
       ring.current.quaternion.copy(camera.quaternion);
     } else {
       ringMat.current.opacity = 0;
     }
 
-    baseEdges.current.opacity = 0.1 + CORE_ENERGY[sys.phase] * 0.06;
-    workEdges.current.opacity = 0.1 + CORE_ENERGY[sys.phase] * 0.06;
+    baseEdges.current.opacity = 0.15 + CORE_ENERGY[sys.phase] * 0.08;
+    workEdges.current.opacity = 0.13 + CORE_ENERGY[sys.phase] * 0.08;
 
     // project every node into the DOM label layer — anchored in world
     // space above or below its node, so labels rarely collide
@@ -414,7 +414,7 @@ function Graph({
           map={tex}
           color={IRIS_DEEP}
           transparent
-          opacity={0.55}
+          opacity={0.62}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           sizeAttenuation
@@ -429,7 +429,7 @@ function Graph({
       </lineSegments>
 
       <lineSegments geometry={litEdgeGeo}>
-        <lineBasicMaterial color={IRIS_BRIGHT} transparent opacity={0.55} depthWrite={false} />
+        <lineBasicMaterial color={IRIS_BRIGHT} transparent opacity={0.75} depthWrite={false} />
       </lineSegments>
 
       <lineSegments geometry={beamGeo}>
@@ -452,10 +452,10 @@ function Graph({
           {p.kind === "core" ? (
             <>
               <lineSegments name="wire" geometry={coreGeo}>
-                <lineBasicMaterial color={IRIS} transparent opacity={0.7} depthWrite={false} />
+                <lineBasicMaterial color={IRIS} transparent opacity={0.8} depthWrite={false} />
               </lineSegments>
               <lineSegments geometry={coreInnerGeo} rotation={[0.6, 0.3, 0]}>
-                <lineBasicMaterial color={IRIS_BRIGHT} transparent opacity={0.5} depthWrite={false} />
+                <lineBasicMaterial color={IRIS_BRIGHT} transparent opacity={0.6} depthWrite={false} />
               </lineSegments>
               <mesh name="dot">
                 <sphereGeometry args={[0.045, 12, 12]} />
@@ -468,7 +468,7 @@ function Graph({
                 <lineBasicMaterial
                   color={p.kind === "work" ? AMBER : IRIS}
                   transparent
-                  opacity={0.4}
+                  opacity={0.52}
                   depthWrite={false}
                 />
               </lineSegments>
