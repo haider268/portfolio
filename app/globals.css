@@ -14,9 +14,9 @@
 
 :root {
   /* ── ground ── */
-  --bg0: #0a0b0e;
-  --bg1: #0e1014;
-  --bg2: #14161c;
+  --bg0: #0b090d;
+  --bg1: #100d12;
+  --bg2: #151217;
 
   /* ── ink ── */
   --ink:      #eae7de;
@@ -28,15 +28,16 @@
   --hair-strong: rgb(234 231 222 / 20%);
 
   /* ── the accent pair ── */
-  --iris:        #8b95e6;
-  --iris-bright: #adb5f2;
-  --iris-deep:   #5a63b8;
-  --iris-wash:   rgb(139 149 230 / 7%);
-  --amber:       #dfc493;
-  --amber-dim:   #a8905e;
-  --end:         #cf7a68;   /* the one functional colour: ending a call */
+  --iris:        #7189b8;
+  --iris-bright: #a6b9e0;
+  --iris-deep:   #394b70;
+  --iris-wash:   rgb(113 137 184 / 7%);
+  --amber:       #d2ad72;
+  --amber-dim:   #765b34;
+  --end:         #cf7a68;   /* ending a call — coral, unchanged */
+  --fail:        #a05661;   /* restrained oxblood: failure semantics only */
 
-  --selection: rgb(139 149 230 / 28%);
+  --selection: rgb(113 137 184 / 28%);
 
   /* ── type ── */
   --sans:    var(--font-sans), "Segoe UI", system-ui, sans-serif;
@@ -156,7 +157,7 @@ a:hover { text-decoration-color: var(--iris); }
   gap: 1rem 2rem;
   padding: 0 var(--pad);
   height: 3.5rem;
-  background: rgb(10 11 14 / 62%);
+  background: rgb(11 9 13 / 62%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hair);
@@ -194,7 +195,7 @@ a:hover { text-decoration-color: var(--iris); }
   height: 100svh;
   overflow: hidden;
   background:
-    radial-gradient(110% 85% at 50% 42%, #0d0f16 0%, var(--bg0) 62%);
+    radial-gradient(110% 85% at 50% 42%, #120e14 0%, var(--bg0) 62%);
 }
 
 .mapstage__scene {
@@ -380,7 +381,7 @@ a:hover { text-decoration-color: var(--iris); }
   font-size: var(--t-mono);
   letter-spacing: .06em;
   color: var(--iris-bright);
-  background: rgb(12 13 18 / 62%);
+  background: rgb(13 11 16 / 62%);
   border: 1px solid var(--hair);
   border-radius: 999px;
   padding: .7rem 1.2rem;
@@ -391,7 +392,7 @@ a:hover { text-decoration-color: var(--iris); }
 .manifest__agentDot {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--iris-bright);
-  box-shadow: 0 0 8px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 8px rgb(113 137 184 / 85%);
 }
 .manifest__list {
   list-style: none;
@@ -454,7 +455,7 @@ a:hover { text-decoration-color: var(--iris); }
   padding: .5rem 1.05rem .5rem .6rem;
   border: 1px solid var(--hair);
   border-radius: 999px;
-  background: rgb(12 13 18 / 66%);
+  background: rgb(13 11 16 / 66%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--ink);
@@ -505,9 +506,9 @@ a:hover { text-decoration-color: var(--iris); }
   height: 18rem;
   background: radial-gradient(
     150% 175% at 0% 100%,
-    rgb(8 9 12 / 97%) 0%,
-    rgb(8 9 12 / 88%) 38%,
-    rgb(8 9 12 / 45%) 60%,
+    rgb(9 7 10 / 97%) 0%,
+    rgb(9 7 10 / 88%) 38%,
+    rgb(9 7 10 / 45%) 60%,
     transparent 78%
   );
 }
@@ -540,7 +541,7 @@ a:hover { text-decoration-color: var(--iris); }
 .dock__step { display: inline-flex; gap: .35rem; animation: step-in .3s var(--ease-out) backwards; }
 .dock__step::before { content: "▸"; color: var(--muted); }
 .dock__step i { font-style: normal; color: var(--muted); max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dock__step[data-ok="false"] { color: var(--end); }
+.dock__step[data-ok="false"] { color: var(--fail); }
 @keyframes step-in { from { opacity: 0; transform: translateY(4px); } }
 
 .dock__captions {
@@ -564,7 +565,7 @@ a:hover { text-decoration-color: var(--iris); }
   color: var(--ink);
   max-width: 25rem;
   text-wrap: pretty;
-  text-shadow: 0 1px 12px rgb(8 9 12 / 80%);
+  text-shadow: 0 1px 12px rgb(9 7 10 / 80%);
 }
 .dock__caption--empty { color: var(--muted); font-size: var(--t-small); }
 .dock__caption[data-streaming]::after {
@@ -592,7 +593,7 @@ a:hover { text-decoration-color: var(--iris); }
   font-family: var(--mono);
   font-size: var(--t-micro);
   color: var(--ink-dim);
-  background: rgb(12 13 18 / 55%);
+  background: rgb(13 11 16 / 55%);
   border: 1px solid var(--hair);
   border-radius: 999px;
   padding: .5rem .85rem;
@@ -625,12 +626,12 @@ a:hover { text-decoration-color: var(--iris); }
 .dock[data-phase="thinking"] .dock__pip,
 .dock[data-phase="tool"] .dock__pip {
   background: var(--iris-bright);
-  box-shadow: 0 0 8px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 8px rgb(113 137 184 / 85%);
   animation: pip 1.5s ease-in-out infinite;
 }
 .dock[data-phase="speaking"] .dock__pip {
   background: var(--amber);
-  box-shadow: 0 0 8px rgb(223 196 147 / 60%);
+  box-shadow: 0 0 8px rgb(210 173 114 / 75%);
   animation: pip 1.5s ease-in-out infinite;
 }
 @keyframes pip { 50% { opacity: .35; } }
@@ -756,7 +757,7 @@ a:hover { text-decoration-color: var(--iris); }
   overscroll-behavior: contain;
   pointer-events: auto;
   text-align: left;
-  background: rgb(11 12 16 / 94%);
+  background: rgb(12 10 15 / 94%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--hair);
@@ -792,7 +793,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .dock__logTool::before { content: "▸ "; color: var(--muted); }
 .dock__logTool i { font-style: normal; color: var(--muted); margin-left: .5rem; }
-.dock__logTool em { font-style: normal; color: var(--end); margin-left: .5rem; }
+.dock__logTool em { font-style: normal; color: var(--fail); margin-left: .5rem; }
 .dock__logDraft {
   font-family: var(--mono);
   font-size: var(--t-micro);
@@ -953,7 +954,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .bus__entry:hover .bus__node {
   background: var(--iris);
-  box-shadow: 0 0 8px rgb(139 149 230 / 60%);
+  box-shadow: 0 0 8px rgb(113 137 184 / 75%);
 }
 
 .bus__title {
@@ -1025,18 +1026,18 @@ a:hover { text-decoration-color: var(--iris); }
 }
 
 .pipe__wire {
-  stroke: rgb(139 149 230 / 22%);
+  stroke: rgb(113 137 184 / 22%);
   stroke-width: 1;
   fill: none;
 }
-.pipe__wire--main { stroke: rgb(139 149 230 / 45%); }
+.pipe__wire--main { stroke: rgb(113 137 184 / 45%); }
 .pipe__wire--drop { stroke-dasharray: 3 4; }
 
 .pipe__lead {
   fill: var(--iris-bright);
-  filter: drop-shadow(0 0 5px rgb(139 149 230 / 90%));
+  filter: drop-shadow(0 0 5px rgb(113 137 184 / 90%));
 }
-.pipe__lead--drop { fill: var(--end); filter: drop-shadow(0 0 4px rgb(207 122 104 / 80%)); }
+.pipe__lead--drop { fill: var(--fail); filter: drop-shadow(0 0 4px rgb(160 86 97 / 85%)); }
 .pipe__lead--soft { fill: var(--amber-dim); filter: drop-shadow(0 0 4px rgb(168 144 94 / 70%)); }
 
 /* ═══ the failure map ══════════════════════════════════════════════════ */
@@ -1088,7 +1089,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .fmap__node[aria-pressed="true"] .fmap__pip {
   background: var(--iris-bright);
-  box-shadow: 0 0 6px rgb(139 149 230 / 70%);
+  box-shadow: 0 0 6px rgb(113 137 184 / 85%);
 }
 
 .fmap__panel {
@@ -1101,7 +1102,7 @@ a:hover { text-decoration-color: var(--iris); }
   font-size: var(--t-micro);
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--fail);
 }
 .fmap__panelTitle {
   font-family: var(--display);
@@ -1469,7 +1470,7 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .trace__row[data-passed]::before {
   background: var(--iris);
-  box-shadow: 0 0 0 1px var(--iris), 0 0 8px rgb(139 149 230 / 50%);
+  box-shadow: 0 0 0 1px var(--iris), 0 0 8px rgb(113 137 184 / 50%);
 }
 .trace__t {
   font-family: var(--mono); font-size: var(--t-mono);
@@ -1610,7 +1611,7 @@ a:hover { text-decoration-color: var(--iris); }
 .booking__problem {
   margin-bottom: 1.1rem;
   font-size: var(--t-small);
-  color: var(--end);
+  color: var(--fail);
 }
 .booking__problem a { color: inherit; }
 
@@ -1705,7 +1706,7 @@ a:hover { text-decoration-color: var(--iris); }
     right: var(--pad);
     width: auto;
     bottom: 5.4rem;
-    background: rgb(12 13 18 / 72%);
+    background: rgb(13 11 16 / 72%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--hair);
