@@ -18,6 +18,7 @@ const SHORT: Record<string, string> = {
   "site-agent": "This site's agent",
   "voice-agents": "Voice agents",
   "speech-loop": "Speech loop",
+  "conversation-memory": "Conversation memory",
   "scheduling-timezone": "Timezone engine",
   "micro-tools": "Micro-tools",
   "pipelines-crm": "Pipelines & CRM",

@@ -1,0 +1,45 @@
+---
+title: Conversation Memory Across Calls
+kicker: The second call resumes, it never starts cold
+summary: A lead's history and prior call context are read before the agent speaks, so a second call resumes where the first one left off instead of starting cold.
+metric: resumes where the last call ended
+order: 17
+stack: ["CRM records", "Call summaries", "Post-call pipelines"]
+---
+
+Most voice agents treat every call as the first call. A lead who spent four
+minutes yesterday explaining what they need gets asked the same questions
+again today — which is exactly the moment they stop believing anyone is
+listening.
+
+Here, the agent reads before it speaks.
+
+## What it reads
+
+Before the first word of a follow-up call, the agent is loaded with the
+lead's record: prior call summaries and outcomes, what was already asked
+and answered, what was offered, what they objected to, and where the last
+conversation actually ended. All of it comes from the
+[post-call pipelines](/work/voice-deployments) that file summaries,
+outcomes and contact updates onto the CRM record after every call — the
+write side and the read side are the same records.
+
+## What that changes on the call
+
+- A lead who said "call me after the 15th" is greeted as that person, not
+  re-qualified from zero.
+- A question answered on the last call is not asked again; a detail that
+  was missing is the first thing asked for.
+- An objection already handled is not re-argued — the conversation moves
+  forward from where it stopped.
+
+The same continuity feeds
+[outcome-based routing](/systems/pipelines-crm): the classification a call
+writes is the context the next call reads.
+
+## The discipline underneath
+
+Memory is still subject to the
+[grounding rules](/systems/reliability): history informs how the agent
+opens and what it skips — but every fact it states out loud, availability
+included, is a live read at the moment it speaks, never a recollection.

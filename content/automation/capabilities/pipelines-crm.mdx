@@ -1,14 +1,17 @@
 ---
-title: Lead Pipelines & CRM
-kicker: Tagging, staging, validation
-summary: Event-driven pipelines across GoHighLevel and others — with middleware validation that drops malformed records before a call is ever placed.
-metric: validation before the dial
+title: CRM Integrations & Pipelines
+kicker: A call outcome decides what happens to the lead next
+summary: Event-driven pipelines across GoHighLevel and others — validation before any dial, with call outcomes routing leads into different nurture and offer paths automatically.
+metric: 1,500+ appointments booked
 order: 30
 stack: ["GoHighLevel", "HubSpot", "Zoho", "Pipedrive", "n8n", "Make"]
 ---
 
 Validation before the dial is the cheapest reliability win in the system, and it
-is cheap because of where it sits rather than what it does.
+is cheap because of where it sits rather than what it does. The machinery on
+this page has booked **more than 1,500 appointments** through CRM pipeline
+automation — a separate channel from the
+[voice-agent bookings](/work/voice-deployments), additive to them.
 
 A lead form will hand you a phone number with a letter in it, a country code
 that is not one, or a required field that the user skipped because the form let
@@ -37,6 +40,23 @@ stage, then emit — and only the emit triggers outbound work.
 Which CRM matters less than it appears. GoHighLevel is the common one. HubSpot,
 Zoho and Pipedrive have the same primitives under different names, and n8n or
 Make sit in the middle where native automation runs out of expressiveness.
+
+## Outcome-based routing
+
+The same tag-and-stage machinery, triggered by a second input: not just a
+lead *arriving*, but a call *ending*.
+
+Every call result is classified — booked, no answer, voicemail, declined,
+call back later — and the classification re-tags and re-stages the contact.
+The new stage decides what fires next: an SMS nurture sequence, an email
+track, a promotional offer, or a re-attempt at a better hour. A lead that
+booked leaves the chase paths automatically; a lead that said "call me next
+month" is parked and resurfaced, not re-dialled tomorrow by a workflow that
+never heard the call.
+
+The [agent's memory of prior calls](/systems/conversation-memory) reads
+from the same records this routing writes — one contact history, consumed
+by both.
 
 ## Tradeoffs
 

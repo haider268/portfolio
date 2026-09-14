@@ -103,19 +103,33 @@ export default function Page() {
                 <ul className="practice__record">
                   <li>
                     <span>Fynora AI</span>
-                    <span>AI Automation / Voice AI Engineer · 2025—</span>
+                    <span>AI Automation / Voice AI Engineer · Mar 2025—</span>
                   </li>
                   <li>
                     <span>Robionix Technologies</span>
-                    <span>AI Design Engineer · 2023–25</span>
+                    <span>AI Design Engineer · Sep 2023 – Feb 2025</span>
                   </li>
                   <li>
                     <span>Orbon Technologies</span>
-                    <span>Design Engineer · embedded C++ · 2023–24</span>
+                    <span>Design Engineer · embedded C++ · Jun 2023 – Feb 2024</span>
+                  </li>
+                  <li>
+                    <span>Freelance / self-employed</span>
+                    <span>AI &amp; automation · early GoHighLevel, n8n, first agent work · before Orbon</span>
                   </li>
                   <li>
                     <span>B.E. Mechatronics</span>
                     <span>Air University, Islamabad</span>
+                  </li>
+                </ul>
+                <ul className="practice__record">
+                  <li>
+                    <span>University technical society</span>
+                    <span>Led 30+ members for a year · building-automation project end to end</span>
+                  </li>
+                  <li>
+                    <span>University ambassador</span>
+                    <span>Two national tech festivals · one best-ambassador distinction</span>
                   </li>
                 </ul>
               </Reveal>
