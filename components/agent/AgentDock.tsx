@@ -58,7 +58,8 @@ export default function AgentDock() {
           <span className="summon__ring" aria-hidden="true">
             <svg viewBox="0 0 40 40" fill="none">
               <circle cx="20" cy="20" r="18.5" className="summon__orbit" />
-              <circle cx="20" cy="20" r="2.6" className="summon__dot" />
+              <circle cx="20" cy="20" r="13.5" className="summon__orbit2" />
+              <circle cx="20" cy="20" r="2.4" className="summon__dot" />
             </svg>
           </span>
           <span className="summon__label">Talk to the system</span>

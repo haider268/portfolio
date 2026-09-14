@@ -28,6 +28,14 @@ export type PlacedNode = MapNode & {
 /* Deterministic layout, an orrery of the practice: subsystems ring the
    core; each case study sits at the circular mean of the subsystems it
    actually runs on. */
+/** signed shortest rotation from a to b, in radians */
+function shortestArc(a: number, b: number): number {
+  let d = (b - a) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+
 export function layoutNodes(nodes: MapNode[]): PlacedNode[] {
   const systems = nodes.filter((n) => n.kind === "system");
   const work = nodes.filter((n) => n.kind === "work");
@@ -49,21 +57,39 @@ export function layoutNodes(nodes: MapNode[]): PlacedNode[] {
     });
   });
 
-  work.forEach((n, i) => {
+  /* Work placement, two passes. Pass one: the raw circular mean of the
+     subsystems each work item runs on — the semantic position. Pass two:
+     most work shares similar dependencies, so raw means CLUMP on one side
+     of the ring; blend each node toward an evenly spaced slot (keeping
+     the semantic ORDER) so the ring reads balanced without lying about
+     the relationships — the edges still tell the truth. */
+  const raw = work.map((n, i) => {
     const used = n.uses.map((u) => byAngle.get(u)).filter((a): a is number => a !== undefined);
-    let angle: number;
-    if (used.length) {
-      const sx = used.reduce((s, a) => s + Math.cos(a), 0);
-      const sy = used.reduce((s, a) => s + Math.sin(a), 0);
-      angle = Math.atan2(sy, sx) + (i % 2 ? 0.42 : -0.42);
-    } else {
-      angle = (i / Math.max(work.length, 1)) * Math.PI * 2 + 0.5;
-    }
+    if (!used.length) return { n, i, angle: (i / Math.max(work.length, 1)) * Math.PI * 2 + 0.5 };
+    const sx = used.reduce((s, a) => s + Math.cos(a), 0);
+    const sy = used.reduce((s, a) => s + Math.sin(a), 0);
+    return { n, i, angle: Math.atan2(sy, sx) };
+  });
+
+  const order = [...raw].sort((a, b) => a.angle - b.angle);
+  const n = Math.max(order.length, 1);
+  // anchor the even spacing at the mean of the raw angles, so the whole
+  // ring does not rotate away from its semantic centre of mass
+  const anchor = Math.atan2(
+    raw.reduce((s, r) => s + Math.sin(r.angle), 0),
+    raw.reduce((s, r) => s + Math.cos(r.angle), 0)
+  );
+
+  order.forEach((r, rank) => {
+    const uniform = anchor + ((rank - (n - 1) / 2) / n) * Math.PI * 2;
+    // 0 = pure semantics (clumped), 1 = pure symmetry; .62 keeps the
+    // neighbourhood ordering while spreading the ring
+    const angle = r.angle + shortestArc(r.angle, uniform) * 0.62;
     placed.push({
-      ...n,
+      ...r.n,
       angle,
-      flip: i % 2 === 1,
-      pos: [Math.cos(angle) * 4.75, 1.5 * Math.sin(i * 2.1) + 0.3, Math.sin(angle) * 4.75],
+      flip: rank % 2 === 1,
+      pos: [Math.cos(angle) * 4.75, 1.15 * Math.sin(r.i * 2.1) + 0.3, Math.sin(angle) * 4.75],
     });
   });
 

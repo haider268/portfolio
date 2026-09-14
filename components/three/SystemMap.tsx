@@ -28,7 +28,13 @@ const IRIS = new THREE.Color("#8b95e6");
 const IRIS_BRIGHT = new THREE.Color("#adb5f2");
 const IRIS_DEEP = new THREE.Color("#5a63b8");
 const AMBER = new THREE.Color("#dfc493");
+const AMBER_BRIGHT = new THREE.Color("#ecdcb0");
 const INK = new THREE.Color("#eae7de");
+/* the two wiring materials: core→system spokes and work→system
+   dependencies — identical on the incumbent palette, split so a material
+   system can treat intelligence-wiring and production-wiring differently */
+const EDGE_SYS = new THREE.Color("#5a63b8");
+const EDGE_WORK = new THREE.Color("#5a63b8");
 
 /* ── per-phase energy for the core, same table the console speaks ──────── */
 
@@ -175,11 +181,20 @@ function Graph({
     };
   }, [gl]);
 
-  /* the permanent wiring: core→system, work→used systems */
-  const baseEdgeGeo = useMemo(() => {
+  /* the permanent wiring, as two materials: core→system spokes and
+     work→system dependencies */
+  const sysEdgeGeo = useMemo(() => {
     const pts: number[] = [];
     for (const p of placed) {
       if (p.kind === "system") pts.push(0, 0.1, 0, p.pos.x, p.pos.y, p.pos.z);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    return geo;
+  }, [placed]);
+  const workEdgeGeo = useMemo(() => {
+    const pts: number[] = [];
+    for (const p of placed) {
       if (p.kind === "work") {
         for (const u of p.uses) {
           const s = byatSlug.get(u);
@@ -191,6 +206,7 @@ function Graph({
     geo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
     return geo;
   }, [placed, byatSlug]);
+  const workEdges = useRef<THREE.LineBasicMaterial>(null!);
 
   /* the lit wiring: edges incident to the focused/selected node, plus
      agent beams from the core to whatever it just read */
@@ -333,6 +349,7 @@ function Graph({
     }
 
     baseEdges.current.opacity = 0.1 + CORE_ENERGY[sys.phase] * 0.06;
+    workEdges.current.opacity = 0.1 + CORE_ENERGY[sys.phase] * 0.06;
 
     // project every node into the DOM label layer — anchored in world
     // space above or below its node, so labels rarely collide
@@ -404,8 +421,11 @@ function Graph({
         />
       </points>
 
-      <lineSegments geometry={baseEdgeGeo}>
-        <lineBasicMaterial ref={baseEdges} color={IRIS_DEEP} transparent opacity={0.12} depthWrite={false} />
+      <lineSegments geometry={sysEdgeGeo}>
+        <lineBasicMaterial ref={baseEdges} color={EDGE_SYS} transparent opacity={0.12} depthWrite={false} />
+      </lineSegments>
+      <lineSegments geometry={workEdgeGeo}>
+        <lineBasicMaterial ref={workEdges} color={EDGE_WORK} transparent opacity={0.12} depthWrite={false} />
       </lineSegments>
 
       <lineSegments geometry={litEdgeGeo}>

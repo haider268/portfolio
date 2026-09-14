@@ -477,6 +477,18 @@ a:hover { text-decoration-color: var(--iris); }
 }
 .summon:hover .summon__orbit { stroke-dasharray: 88 28; }
 .summon__dot { fill: var(--iris-bright); }
+/* the inner instrument ring: a slower counter-rotating fragment, neutral
+   until a palette gives it a material of its own */
+.summon__orbit2 {
+  stroke: var(--muted);
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: 5 16;
+  stroke-linecap: round;
+  opacity: .45;
+  transform-origin: center;
+  animation: orbit 12s linear infinite reverse;
+}
 @keyframes orbit { to { transform: rotate(360deg); } }
 .summon__label {
   font-family: var(--mono);
