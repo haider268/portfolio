@@ -81,7 +81,7 @@ const SERVICE_LD = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0b0e",
+  themeColor: "#090c0b",
   colorScheme: "dark",
 };
 
