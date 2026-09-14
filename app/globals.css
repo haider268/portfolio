@@ -1414,6 +1414,55 @@ a:hover { text-decoration-color: var(--iris); }
   color: var(--iris-bright);
 }
 
+/* ═══ the document constellation banner ════════════════════════════════
+   The page's real edges, drawn in the map's material language. All colour
+   comes from tokens, so palette branches inherit it untouched. */
+
+.cst {
+  margin: 0 0 clamp(2rem, 4vw, 3rem);
+  border-block: 1px solid var(--hair);
+  padding: .5rem 0;
+}
+.cst svg { width: 100%; height: auto; display: block; }
+
+.cst__halo0 { stop-color: var(--iris); stop-opacity: .13; }
+.cst__halo1 { stop-color: var(--iris); stop-opacity: 0; }
+.cst--work .cst__halo0 { stop-color: var(--amber); }
+
+.cst__edge {
+  stroke: var(--iris-deep);
+  stroke-opacity: .35;
+  stroke-width: 1;
+}
+
+.cst__wire { fill: none; stroke-width: 1; }
+.cst--sys .cst__wire { stroke: var(--iris); stroke-opacity: .55; }
+.cst--work .cst__wire { stroke: var(--amber); stroke-opacity: .55; }
+.cst__wire--in { stroke-opacity: .28; }
+.cst--sys .cst__dot { fill: var(--iris-bright); }
+.cst--work .cst__dot { fill: var(--amber); }
+
+.cst__label {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  fill: var(--ink-dim);
+  text-anchor: middle;
+}
+.cst__legend {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+
+@media (max-width: 47rem) {
+  .cst__label { font-size: 14px; }
+  .cst__legend { font-size: 12.5px; }
+}
+
 /* ═══ the trace (in MDX) ═══════════════════════════════════════════════ */
 
 .trace { border-top: 1px solid var(--hair-strong); padding-top: 1.1rem; }

@@ -21,6 +21,10 @@ export type FeedItem =
   | { kind: "draft"; href: string; reference?: string }
   | { kind: "note"; text: string };
 
+/* hands-free stands down after this much TOTAL silence (no speech heard,
+   no turn started) — long enough to think, short enough to not surveil */
+const HF_SILENCE_MS = 120_000;
+
 const CLOSING = "Thanks for stopping by. Email haiderali2689832@gmail.com any time.";
 
 /* Spoken the moment a session opens — the agent talks first. Recorded in
@@ -57,7 +61,10 @@ export function useAgent() {
      hands-free, not open-mic surveillance. */
   const [handsFree, setHandsFreeState] = useState(false);
   const handsFreeRef = useRef(false);
-  const silentTries = useRef(0);
+  /* the mic stays armed while the toggle is on; only a long stretch of
+     total silence stands it down — and when that happens the TOGGLE turns
+     off, visibly, instead of a lit switch over a dead mic */
+  const lastVoiceActivity = useRef(0);
 
   const { phase, live, chain, setPhase, setLive, pushTool, clearChain } = useSystem();
 
@@ -238,6 +245,7 @@ export function useAgent() {
       if (!clean || busy || phase === "ended") return;
 
       stopped.current = false;
+      lastVoiceActivity.current = performance.now();
       setBusy(true);
       setDraft("");
       setStreaming("");
@@ -338,23 +346,27 @@ export function useAgent() {
     r.onresult = (e) => {
       const said = e.results[0]?.[0]?.transcript ?? "";
       if (said) {
-        silentTries.current = 0;
+        lastVoiceActivity.current = performance.now();
         void send(said);
       }
     };
     r.onerror = () => setPhase("idle");
     r.onend = () => {
       if (useSystem.getState().phase !== "listening") return;
-      // hands-free: one quiet retry, then stand down rather than loop an
-      // open mic at someone who has stopped talking
-      if (handsFreeRef.current && silentTries.current < 1) {
-        silentTries.current += 1;
-        try {
-          r.start();
-          return;
-        } catch {
-          /* fall through to idle */
+      /* hands-free is a call, not a countdown: keep re-arming through
+         silence for as long as the toggle is on — up to two quiet minutes.
+         Past that, stand down HONESTLY: the toggle itself switches off. */
+      if (handsFreeRef.current) {
+        if (performance.now() - lastVoiceActivity.current < HF_SILENCE_MS) {
+          try {
+            r.start();
+            return;
+          } catch {
+            /* recognition refused a restart; stand down visibly below */
+          }
         }
+        handsFreeRef.current = false;
+        setHandsFreeState(false);
       }
       setPhase("idle");
     };
@@ -371,7 +383,9 @@ export function useAgent() {
   const speechDrained = useCallback(async () => {
     await audioQueue.current;
     if (speechOn.current) {
-      for (let i = 0; i < 200 && window.speechSynthesis.speaking; i++) {
+      // capped: Chrome's `speaking` flag can wedge true forever, and a
+      // 15s ceiling beats a mic that never re-arms
+      for (let i = 0; i < 100 && window.speechSynthesis.speaking; i++) {
         await new Promise((r) => setTimeout(r, 150));
       }
     }
@@ -386,7 +400,7 @@ export function useAgent() {
     await speechDrained();
     const s = useSystem.getState();
     if (!handsFreeRef.current || stopped.current || s.phase !== "idle" || !s.live) return;
-    silentTries.current = 0;
+    lastVoiceActivity.current = performance.now();
     listenRef.current();
   }, [speechDrained]);
   const rearmRef = useRef(rearm);
@@ -400,6 +414,7 @@ export function useAgent() {
       handsFreeRef.current = on;
       setHandsFreeState(on);
       if (on) {
+        lastVoiceActivity.current = performance.now();
         const s = useSystem.getState();
         if (s.live && s.phase === "idle" && !busy) void rearm();
       } else if (useSystem.getState().phase === "listening") {

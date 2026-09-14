@@ -3,6 +3,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Doc } from "@/lib/content";
 import Masthead from "./Masthead";
 import Colophon from "./Colophon";
+import DocConstellation from "./DocConstellation";
 import { mdxComponents } from "./mdx";
 
 /* One article layout for both collections: a mono meta rail and a single
@@ -33,6 +34,8 @@ export default function DocPage({
               <h1 className="article__title">{doc.title}</h1>
               <p className="article__summary">{doc.summary}</p>
             </header>
+
+            <DocConstellation doc={doc} />
 
             <div className="spread">
               <div className="article__meta">
