@@ -18,16 +18,22 @@ export type Provider = "groq" | "gemini" | "none";
 
 const FORCED = process.env.LLM_PROVIDER?.trim().toLowerCase();
 
-/** An explicit LLM_PROVIDER wins, but only if that provider's key is actually
-    present — otherwise a stale setting would silently disable the agent. With
-    nothing forced, Groq goes first: Gemini's free tier is region-limited and
-    fails for some visitors in a way that is hard to diagnose from a browser. */
+/** The failover order. An explicit LLM_PROVIDER goes first (only if its key
+    actually exists — a stale setting must not disable the agent); Gemini is
+    the default primary, Groq the reserve. Groq's free tier is the more
+    conservative of the two, so it is deliberately the backup: it only takes
+    turns Gemini could not serve. */
+export function providerOrder(): Exclude<Provider, "none">[] {
+  const order: Exclude<Provider, "none">[] = [];
+  if (FORCED === "groq" && GROQ_KEY) order.push("groq");
+  if (FORCED === "gemini" && GEMINI_KEY) order.push("gemini");
+  if (GEMINI_KEY && !order.includes("gemini")) order.push("gemini");
+  if (GROQ_KEY && !order.includes("groq")) order.push("groq");
+  return order;
+}
+
 export function provider(): Provider {
-  if (FORCED === "groq" && GROQ_KEY) return "groq";
-  if (FORCED === "gemini" && GEMINI_KEY) return "gemini";
-  if (GROQ_KEY) return "groq";
-  if (GEMINI_KEY) return "gemini";
-  return "none";
+  return providerOrder()[0] ?? "none";
 }
 
 /* ── the provider-neutral conversation ─────────────────────────────────── */
@@ -47,8 +53,28 @@ export type Msg =
 
 export type TurnResult = { text?: string; calls?: Call[]; raw?: unknown };
 
+/* There is no API that reports how much free-tier quota remains — the only
+   way to learn a limit is to hit it. So the decision is made per turn, from
+   the response: the primary provider runs (with its own transient retries),
+   and only if it still fails — quota exhausted, region-blocked, down — does
+   the same turn replay on the reserve. A healthy primary costs zero extra
+   latency. One caveat carried across providers: Gemini's opaque
+   thoughtSignature raw parts mean a mid-conversation switch replays calls
+   from the normalised list, which both providers accept. */
 export async function turn(system: string, msgs: Msg[], signal: AbortSignal): Promise<TurnResult> {
-  return provider() === "groq" ? groqTurn(system, msgs, signal) : geminiTurn(system, msgs, signal);
+  const order = providerOrder();
+  let lastError: unknown = new Error("no model provider configured");
+  for (const p of order) {
+    try {
+      return p === "groq"
+        ? await groqTurn(system, msgs, signal)
+        : await geminiTurn(system, msgs, signal);
+    } catch (e) {
+      lastError = e;
+      if (signal.aborted) throw e;
+    }
+  }
+  throw lastError;
 }
 
 /* ── retry ─────────────────────────────────────────────────────────────── */
