@@ -164,7 +164,7 @@ async function geminiTurn(system: string, msgs: Msg[], signal: AbortSignal): Pro
         contents,
         tools: [{ functionDeclarations: geminiDeclarations() }],
         // replies are short and spoken; the cap holds latency and cost down
-        generationConfig: { temperature: 0.2, maxOutputTokens: 400 },
+        generationConfig: { temperature: 0.45, maxOutputTokens: 400 },
       }),
     },
     signal
@@ -225,7 +225,7 @@ async function groqTurn(system: string, msgs: Msg[], signal: AbortSignal): Promi
         messages,
         tools: TOOLS.map((t) => ({ type: "function", function: t })),
         tool_choice: "auto",
-        temperature: 0.2,
+        temperature: 0.45,
         max_completion_tokens: 400,
       }),
     },
