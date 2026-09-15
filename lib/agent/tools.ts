@@ -120,7 +120,7 @@ export const TOOLS = [
   {
     name: "request_human_handoff",
     description:
-      "Hand the conversation to email — for anything you cannot answer, anything commercially specific, or on request. Say you will pick it up yourself; never refer to yourself in the third person.",
+      "Hand the conversation to email — for anything you cannot answer, anything commercially specific, or on request. Haider picks these up himself.",
     parameters: {
       type: "object",
       properties: {
@@ -435,7 +435,7 @@ const DISPATCH: Record<string, Handler> = {
         `Handoff from the site agent [${ref}]`,
         `Reason: ${reason}\n\n${summary}\n\nReference ${ref}.`
       ),
-      say: "Say you will pick it up by email yourself, give the address, and stop trying to answer the question. Speak in the first person — never call yourself Haider.",
+      say: "Say Haider will pick this up himself by email, give the address, and stop trying to answer the question. You are Vega, his assistant — never claim to be him.",
     };
   },
 };

@@ -62,7 +62,7 @@ export default function AgentDock() {
               <circle cx="20" cy="20" r="2.4" className="summon__dot" />
             </svg>
           </span>
-          <span className="summon__label">Talk to the system</span>
+          <span className="summon__label">Talk to Vega</span>
         </button>
       </div>
     );
@@ -225,7 +225,7 @@ export default function AgentDock() {
               </p>
             ) : (
               <p className={`dock__logSaid dock__logSaid--${it.kind}`} key={i}>
-                <span>{it.kind === "you" ? "you" : "agent"}</span>
+                <span>{it.kind === "you" ? "you" : "Vega"}</span>
                 {it.kind === "note" || it.kind === "agent" || it.kind === "you" ? it.text : null}
               </p>
             )

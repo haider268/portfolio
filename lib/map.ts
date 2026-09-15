@@ -58,8 +58,8 @@ export function mapNodes(): MapNode[] {
     {
       slug: "core",
       kind: "core",
-      label: "the agent",
-      title: "The live agent",
+      label: "Vega",
+      title: "Vega — the live agent",
       kicker: "voice or text · answers from this map",
       summary:
         "Ask about anything on this map. It searches these documents and you watch it light up what it reads.",

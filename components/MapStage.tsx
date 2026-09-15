@@ -228,7 +228,7 @@ function Manifest({
       <div className="manifest__core">
         <button type="button" className="manifest__agent" onClick={onEngage}>
           <span className="manifest__agentDot" aria-hidden="true" />
-          the agent — voice or text, answers from this map
+          Vega — voice or text, answers from this map
         </button>
       </div>
       <ul className="manifest__list">

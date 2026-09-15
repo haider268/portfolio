@@ -30,7 +30,7 @@ const CLOSING = "Thanks for stopping by. Email haiderali2689832@gmail.com any ti
 /* Spoken the moment a session opens — the agent talks first. Recorded in
    the history as a model turn so the model knows it already greeted. */
 const GREETING =
-  "Hello, welcome to Haider's portfolio. I'm the live agent that runs it — ask me about the work, or tell me where you'd like to go.";
+  "Hi, I'm Vega — Haider's assistant, and the voice of this site. Ask me about his work, or tell me where you'd like to go.";
 
 type Recognition = {
   lang: string;
@@ -266,6 +266,20 @@ export function useAgent() {
     [stopAutoScroll]
   );
 
+  /* the reply a turn still owes the visible feed once its audio drains */
+  const turnSeq = useRef(0);
+  const unfinished = useRef<null | { reply: string; capped: boolean }>(null);
+
+  const finalizeTurn = useCallback(() => {
+    const u = unfinished.current;
+    if (!u) return;
+    unfinished.current = null;
+    if (u.reply) push({ kind: "agent", text: u.reply });
+    setStreaming("");
+    spokenSoFar.current = "";
+    setPhase(u.capped ? "ended" : "idle");
+  }, [push, setPhase]);
+
   const silence = useCallback(() => {
     stopped.current = true;
     audioQueue.current = Promise.resolve();
@@ -282,6 +296,10 @@ export function useAgent() {
     async (text: string) => {
       const clean = text.trim();
       if (!clean || busy || phase === "ended") return;
+
+      // a new turn flushes whatever the last one still owed the feed
+      finalizeTurn();
+      const turn = ++turnSeq.current;
 
       stopped.current = false;
       lastVoiceActivity.current = performance.now();
@@ -358,7 +376,8 @@ export function useAgent() {
         }
 
         if (reply) {
-          push({ kind: "agent", text: reply });
+          // history updates NOW so an immediate next turn knows this one;
+          // the visible feed waits for the voice to finish (finalizeTurn)
           history.current = [
             ...history.current,
             { role: "user" as const, text: clean },
@@ -368,16 +387,25 @@ export function useAgent() {
       } catch {
         push({
           kind: "note",
-          text: "That did not go through. Everything I know is on these pages, and email reaches me directly.",
+          text: "That did not go through. Everything on these pages still stands, and haiderali2689832@gmail.com reaches Haider directly.",
         });
       } finally {
         setBusy(false);
-        setStreaming("");
-        setPhase(capped ? "ended" : "idle");
+        /* THE FLASH BUG LIVED HERE. The stream closes when the model stops
+           GENERATING — seconds before the voice stops SPEAKING. Pushing the
+           full reply and clearing the caption at that moment flashed the
+           whole text, wiped it, then re-typed it as audio caught up. The
+           turn now stays "speaking" and finalizes only when playback has
+           actually drained; a new turn flushes it instantly instead. */
+        unfinished.current = { reply, capped };
+        void (async () => {
+          await speechDrained();
+          if (turnSeq.current === turn) finalizeTurn();
+        })();
         if (!capped) void rearmRef.current();
       }
     },
-    [busy, phase, push, speak, makeReveal, setPhase, pushTool, clearChain, router, performScroll, stopAutoScroll]
+    [busy, phase, push, speak, makeReveal, finalizeTurn, setPhase, pushTool, clearChain, router, performScroll, stopAutoScroll]
   );
 
   const listen = useCallback(() => {
@@ -485,14 +513,16 @@ export function useAgent() {
 
   const end = useCallback(() => {
     recognition.current?.stop();
+    finalizeTurn(); // whatever the voice still owed the feed lands first
     silence();
     history.current = [];
     setBusy(false);
     setPhase("ended");
     push({ kind: "note", text: CLOSING });
-  }, [silence, setPhase, push]);
+  }, [finalizeTurn, silence, setPhase, push]);
 
   const restart = useCallback(() => {
+    unfinished.current = null;
     history.current = [];
     setFeed([]);
     clearChain();

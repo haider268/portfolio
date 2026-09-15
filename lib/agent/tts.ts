@@ -21,7 +21,7 @@ const MODEL = process.env.CARTESIA_MODEL?.trim() || "sonic-3";
    Cartesia (small monthly credit) is the reserve; the browser voice is the
    floor that can never run out. */
 const DG_KEY = process.env.DEEPGRAM_API_KEY?.trim() || "";
-const DG_MODEL = process.env.DEEPGRAM_TTS_MODEL?.trim() || "aura-2-thalia-en";
+const DG_MODEL = process.env.DEEPGRAM_TTS_MODEL?.trim() || "aura-2-asteria-en";
 
 /* Pinned deliberately. Cartesia rejects requests without it, and a floating
    version would let an upstream change break the voice with no deploy. */

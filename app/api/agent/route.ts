@@ -120,7 +120,7 @@ export async function POST(req: Request) {
 
         // ran out of hops: hand over rather than keep a visitor waiting
         finish(
-          "I am going round in circles on that one. Email haiderali2689832@gmail.com and I will answer it directly."
+          "I am going round in circles on that one. Email haiderali2689832@gmail.com and Haider will answer it directly."
         );
       } catch (e) {
         if (req.signal.aborted) {
@@ -168,7 +168,7 @@ function groundedFallback(
       ms: 0,
     });
     finish(
-      "I have opened the booking page for you — pick any open slot and the calendar invitation lands in both our inboxes. Prefer email? haiderali2689832@gmail.com reaches me directly."
+      "I have opened the booking page for you — pick any open slot and the calendar invitation goes to you and to Haider. Prefer email? haiderali2689832@gmail.com reaches him directly."
     );
     return;
   }
@@ -186,7 +186,7 @@ function groundedFallback(
 
   if (hits.length === 0) {
     finish(
-      "I could not find anything on that. Email haiderali2689832@gmail.com and I will answer it directly."
+      "I could not find anything on that. Email haiderali2689832@gmail.com and Haider will answer it directly."
     );
     return;
   }
