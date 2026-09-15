@@ -3,6 +3,7 @@ import Anchor from "./Anchor";
 import Trace from "./Trace";
 import FailureTiers from "./FailureTiers";
 import FailureMap from "./FailureMap";
+import StatBanner from "./StatBanner";
 import SystemDiagram from "./SystemDiagram";
 
 /* The component map MDX bodies render through. Anything an author reaches for
@@ -23,5 +24,6 @@ export const mdxComponents: MDXComponents = {
   Trace,
   FailureTiers,
   FailureMap,
+  StatBanner,
   SystemDiagram,
 };

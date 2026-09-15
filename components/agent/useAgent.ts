@@ -73,7 +73,6 @@ export function useAgent() {
   const recognition = useRef<Recognition | null>(null);
 
   const audioQueue = useRef<Promise<void>>(Promise.resolve());
-  const fetchQueue = useRef<Promise<string | null>>(Promise.resolve(null));
   const audioEl = useRef<HTMLAudioElement | null>(null);
   const useBrowserVoice = useRef(false);
   /* two consecutive failures of any kind = the voice service is not coming
@@ -104,23 +103,59 @@ export function useAgent() {
 
   const push = useCallback((item: FeedItem) => setFeed((prev) => [...prev, item]), []);
 
-  const browserSpeak = useCallback((text: string) => {
-    if (!speechOn.current) return;
+  /* CAPTION SYNC.
+
+     The caption is a subtitle, not a teleprompter: each sentence appears
+     the moment its audio actually starts, so the text never runs seconds
+     ahead of the voice. Every reveal path is guarded — audio start,
+     browser-voice start, no-voice-at-all, failure, and a hard timeout —
+     because a caption that never appears is worse than one that is early. */
+  const spokenSoFar = useRef("");
+  const revealTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+
+  const makeReveal = useCallback((text: string) => {
+    let done = false;
+    const reveal = () => {
+      if (done || stopped.current) return;
+      done = true;
+      spokenSoFar.current = spokenSoFar.current
+        ? `${spokenSoFar.current} ${text}`
+        : text;
+      setStreaming(spokenSoFar.current);
+    };
+    // the backstop: audio blocked, headless, or a provider hang — the
+    // words still land
+    const t = setTimeout(reveal, 3500);
+    revealTimers.current.add(t);
+    return () => {
+      clearTimeout(t);
+      revealTimers.current.delete(t);
+      reveal();
+    };
+  }, []);
+
+  const browserSpeak = useCallback((text: string, onStart?: () => void) => {
+    if (!speechOn.current) {
+      onStart?.();
+      return;
+    }
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.04;
     u.lang = "en-US";
+    if (onStart) u.onstart = onStart;
     window.speechSynthesis.speak(u);
   }, []);
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, onStart?: () => void) => {
       if (useBrowserVoice.current) {
-        browserSpeak(text);
+        browserSpeak(text, onStart);
         return;
       }
-      /* every sentence is fetched the moment it arrives; playback stays in
-         order, so only the first sentence is a wait the visitor feels */
-      const pending = fetchQueue.current.then(async () => {
+      /* the fetch starts NOW, not behind the previous sentence's fetch —
+         Deepgram takes concurrency happily, and playback order is enforced
+         by the audio queue alone. This is most of the lag fix. */
+      const pending = (async (): Promise<string | null> => {
         if (stopped.current || useBrowserVoice.current) return null;
         try {
           const res = await fetch("/api/speak", {
@@ -139,13 +174,12 @@ export function useAgent() {
           if (++voiceFails.current >= 2) useBrowserVoice.current = true;
           return null;
         }
-      });
-      fetchQueue.current = pending;
+      })();
 
       audioQueue.current = audioQueue.current.then(async () => {
         const url = await pending;
         if (!url) {
-          if (!stopped.current) browserSpeak(text);
+          if (!stopped.current) browserSpeak(text, onStart);
           return;
         }
         if (stopped.current) {
@@ -157,7 +191,10 @@ export function useAgent() {
         await new Promise<void>((resolve) => {
           audio.onended = () => resolve();
           audio.onerror = () => resolve();
-          audio.play().catch(() => resolve());
+          audio.play().then(() => onStart?.()).catch(() => {
+            onStart?.();
+            resolve();
+          });
         });
         URL.revokeObjectURL(url);
       });
@@ -232,6 +269,8 @@ export function useAgent() {
   const silence = useCallback(() => {
     stopped.current = true;
     audioQueue.current = Promise.resolve();
+    for (const t of revealTimers.current) clearTimeout(t);
+    revealTimers.current.clear();
     if (audioEl.current) {
       audioEl.current.pause();
       audioEl.current = null;
@@ -249,6 +288,7 @@ export function useAgent() {
       setBusy(true);
       setDraft("");
       setStreaming("");
+      spokenSoFar.current = "";
       clearChain();
       push({ kind: "you", text: clean });
       setPhase("thinking");
@@ -308,8 +348,9 @@ export function useAgent() {
             } else if (ev.type === "chunk") {
               setPhase("speaking");
               reply = reply ? `${reply} ${ev.text}` : ev.text;
-              setStreaming(reply);
-              speak(ev.text);
+              // the caption appears when this sentence's AUDIO starts, so
+              // the words never run seconds ahead of the voice
+              speak(ev.text, makeReveal(ev.text));
             } else if (ev.type === "limited") {
               capped = true;
             }
@@ -336,7 +377,7 @@ export function useAgent() {
         if (!capped) void rearmRef.current();
       }
     },
-    [busy, phase, push, speak, setPhase, pushTool, clearChain, router, performScroll, stopAutoScroll]
+    [busy, phase, push, speak, makeReveal, setPhase, pushTool, clearChain, router, performScroll, stopAutoScroll]
   );
 
   const listen = useCallback(() => {

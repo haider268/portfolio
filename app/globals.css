@@ -1821,3 +1821,121 @@ a:hover { text-decoration-color: var(--iris); }
   .dock__logPanel { display: none; }
   .booking__slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ═══ stat banners — figures with physical presence ════════════════════
+   The same material language as the map, in CSS transforms: value plate
+   forward, wireframe sunk behind, a hairline beam between. Tilts a few
+   degrees toward the pointer; reduced motion gets the composed plate. */
+
+.stat3d {
+  margin: 2.4em 0;
+  perspective: 1000px;
+}
+.stat3d__plate {
+  --rx: 0deg;
+  --ry: 0deg;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 160% at 12% 50%, var(--iris-wash) 0%, transparent 55%),
+    var(--bg1);
+  padding: clamp(1.6rem, 4vw, 2.4rem) clamp(1.4rem, 4vw, 2.6rem);
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition: transform .3s var(--ease);
+}
+.stat3d[data-tone="work"] .stat3d__plate {
+  background:
+    radial-gradient(120% 160% at 12% 50%, rgb(223 196 147 / 6%) 0%, transparent 55%),
+    var(--bg1);
+}
+
+.stat3d__wire {
+  position: absolute;
+  top: 50%; right: clamp(.5rem, 4vw, 2.5rem);
+  width: clamp(7rem, 22vw, 11rem);
+  transform: translateY(-50%) translateZ(-60px) rotate(8deg);
+  stroke: var(--iris-deep);
+  fill: var(--iris-deep);
+  opacity: .5;
+  animation: stat-drift 11s ease-in-out infinite alternate;
+}
+.stat3d[data-tone="work"] .stat3d__wire {
+  stroke: var(--amber-dim);
+  fill: var(--amber-dim);
+}
+@keyframes stat-drift {
+  from { transform: translateY(-52%) translateZ(-60px) rotate(6deg); }
+  to   { transform: translateY(-48%) translateZ(-60px) rotate(11deg); }
+}
+
+.stat3d__beam {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: linear-gradient(to right, var(--iris-deep), transparent 70%);
+  opacity: .5;
+  transform: translateZ(-30px);
+}
+.stat3d[data-tone="work"] .stat3d__beam {
+  background: linear-gradient(to right, var(--amber-dim), transparent 70%);
+}
+
+.stat3d__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  transform: translateZ(30px);
+}
+.stat3d__value {
+  font-family: var(--mono);
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  font-weight: 500;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--amber);
+  text-shadow:
+    0 1px 0 rgb(0 0 0 / 35%),
+    0 6px 22px rgb(223 196 147 / 18%);
+}
+.stat3d[data-tone="system"] .stat3d__value {
+  color: var(--iris-bright);
+  text-shadow:
+    0 1px 0 rgb(0 0 0 / 35%),
+    0 6px 22px rgb(139 149 230 / 20%);
+}
+.stat3d__label {
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: .45rem;
+}
+.stat3d__sub {
+  font-size: var(--t-small);
+  color: var(--muted);
+  max-width: 44ch;
+}
+
+.stat3d__tick {
+  position: absolute;
+  width: .85rem; height: .85rem;
+  border-color: var(--hair-strong);
+  border-style: solid;
+  opacity: .9;
+}
+.stat3d__tick--tl { top: .55rem; left: .55rem; border-width: 1px 0 0 1px; }
+.stat3d__tick--br { bottom: .55rem; right: .55rem; border-width: 0 1px 1px 0; }
+
+@media (max-width: 34rem) {
+  .stat3d__wire { opacity: .3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stat3d__plate { transform: none; transition: none; }
+  .stat3d__wire { animation: none; }
+}
