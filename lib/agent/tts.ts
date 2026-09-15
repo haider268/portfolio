@@ -19,9 +19,14 @@ const MODEL = process.env.CARTESIA_MODEL?.trim() || "sonic-3";
    in millions of characters, which for a portfolio is effectively "do not
    think about it" — exactly the property wanted from a primary voice.
    Cartesia (small monthly credit) is the reserve; the browser voice is the
-   floor that can never run out. */
+   floor that can never run out.
+
+   AURA-1, NOT AURA-2, on purpose: measured against the live API, every
+   aura-2-* voice synthesises a sentence in ~2.6-2.8s where aura-* (v1)
+   takes ~1.1s — a 1.5s difference the caller feels on every single
+   sentence. Asteria is the bright, energetic female flagship of v1. */
 const DG_KEY = process.env.DEEPGRAM_API_KEY?.trim() || "";
-const DG_MODEL = process.env.DEEPGRAM_TTS_MODEL?.trim() || "aura-2-asteria-en";
+const DG_MODEL = process.env.DEEPGRAM_TTS_MODEL?.trim() || "aura-asteria-en";
 
 /* Pinned deliberately. Cartesia rejects requests without it, and a floating
    version would let an upstream change break the voice with no deploy. */

@@ -21,10 +21,6 @@ export type FeedItem =
   | { kind: "draft"; href: string; reference?: string }
   | { kind: "note"; text: string };
 
-/* hands-free stands down after this much TOTAL silence (no speech heard,
-   no turn started) — long enough to think, short enough to not surveil */
-const HF_SILENCE_MS = 120_000;
-
 const CLOSING = "Thanks for stopping by. Email haiderali2689832@gmail.com any time.";
 
 /* Spoken the moment a session opens — the agent talks first. Recorded in
@@ -61,10 +57,7 @@ export function useAgent() {
      hands-free, not open-mic surveillance. */
   const [handsFree, setHandsFreeState] = useState(false);
   const handsFreeRef = useRef(false);
-  /* the mic stays armed while the toggle is on; only a long stretch of
-     total silence stands it down — and when that happens the TOGGLE turns
-     off, visibly, instead of a lit switch over a dead mic */
-  const lastVoiceActivity = useRef(0);
+  const silentTries = useRef(0);
 
   const { phase, live, chain, setPhase, setLive, pushTool, clearChain } = useSystem();
 
@@ -302,7 +295,6 @@ export function useAgent() {
       const turn = ++turnSeq.current;
 
       stopped.current = false;
-      lastVoiceActivity.current = performance.now();
       setBusy(true);
       setDraft("");
       setStreaming("");
@@ -415,27 +407,24 @@ export function useAgent() {
     r.onresult = (e) => {
       const said = e.results[0]?.[0]?.transcript ?? "";
       if (said) {
-        lastVoiceActivity.current = performance.now();
+        silentTries.current = 0;
         void send(said);
       }
     };
     r.onerror = () => setPhase("idle");
     r.onend = () => {
       if (useSystem.getState().phase !== "listening") return;
-      /* hands-free is a call, not a countdown: keep re-arming through
-         silence for as long as the toggle is on — up to two quiet minutes.
-         Past that, stand down HONESTLY: the toggle itself switches off. */
-      if (handsFreeRef.current) {
-        if (performance.now() - lastVoiceActivity.current < HF_SILENCE_MS) {
-          try {
-            r.start();
-            return;
-          } catch {
-            /* recognition refused a restart; stand down visibly below */
-          }
+      /* one quiet retry, then the mic CLOSES. Hands-free means the mic
+         reopens after each reply — never an open mic through silence.
+         The toggle stays on; the next reply re-arms it. */
+      if (handsFreeRef.current && silentTries.current < 1) {
+        silentTries.current += 1;
+        try {
+          r.start();
+          return;
+        } catch {
+          /* recognition refused a restart; stand down below */
         }
-        handsFreeRef.current = false;
-        setHandsFreeState(false);
       }
       setPhase("idle");
     };
@@ -469,7 +458,7 @@ export function useAgent() {
     await speechDrained();
     const s = useSystem.getState();
     if (!handsFreeRef.current || stopped.current || s.phase !== "idle" || !s.live) return;
-    lastVoiceActivity.current = performance.now();
+    silentTries.current = 0;
     listenRef.current();
   }, [speechDrained]);
   const rearmRef = useRef(rearm);
@@ -483,7 +472,7 @@ export function useAgent() {
       handsFreeRef.current = on;
       setHandsFreeState(on);
       if (on) {
-        lastVoiceActivity.current = performance.now();
+        silentTries.current = 0;
         const s = useSystem.getState();
         if (s.live && s.phase === "idle" && !busy) void rearm();
       } else if (useSystem.getState().phase === "listening") {
